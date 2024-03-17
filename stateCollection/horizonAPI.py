@@ -11,6 +11,7 @@ import json
 import base64
 import requests
 
+# Collects SPK from Horizon API from 2000 to 2060
 def getSPK(spkid, start_time='2000-01-01', stop_time='2060-01-01'):
     # Define API URL and SPK filename:
     url = 'https://ssd.jpl.nasa.gov/api/horizons.api'
@@ -20,7 +21,7 @@ def getSPK(spkid, start_time='2000-01-01', stop_time='2060-01-01'):
     # IMPORTANT: You must encode the "=" as "%3D" and the ";" as "%3B" in the
     #            Horizons COMMAND parameter specification.
     url += "?format=json&EPHEM_TYPE=SPK&OBJ_DATA=NO"
-    url += "&COMMAND='{}'&START_TIME='{}'&STOP_TIME='{}'".format(spkid, start_time, stop_time)
+    url += "&COMMAND='DES%3D{}%3B'&START_TIME='{}'&STOP_TIME='{}'".format(spkid, start_time, stop_time)
 
     # Submit the API request and decode the JSON-response:
     response = requests.get(url)

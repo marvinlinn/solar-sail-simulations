@@ -13,6 +13,8 @@ import spiceypy as spice
 import stateCollection.horizonAPI as horizon
 from enum import Enum
 
+STANDARD_LIB = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '199', '299', '301', '399']
+
 # Computes Data for a single spkid, given Time object, and step size
 def requestData(spkid, Time, step):
     saveFile = './data/save.npy'
@@ -21,7 +23,7 @@ def requestData(spkid, Time, step):
 
     np.save(saveFile, existingSPK)
 
-    return computeBody(spkid, Time.returnStart, Time.returnEnd, points=Time.returnPoints(step))
+    return computeBody(spkid, Time.returnStart(), Time.returnEnd(), points=Time.returnPoints(step))
 
 # Computes Data for an ARRAY of spkids, given Time object, and step size
 def requestDataSat(spkid, Time, step):
@@ -33,7 +35,7 @@ def requestDataSat(spkid, Time, step):
 
     returnArray = []
     for i in spkid:
-        returnArray.append(computeBody(i, Time.returnStart, Time.returnEnd, points=Time.returnPoints(step)))
+        returnArray.append(computeBody(i, Time.returnStart(), Time.returnEnd(), points=Time.returnPoints(step)))
     return returnArray
 
 # Checks if exisitng SPK exists for given SPKID, If not pulls from API
@@ -42,22 +44,24 @@ def checkSPK(spkid, existingSPK):
         None
     else:
         horizon.getSPK(spkid)
-        existingSPK.append(spkid)
+        np.append(existingSPK, spkid)
     return existingSPK
 
 # Create Save File for spkids
 def createEmptySave():
     saveFile = './data/save.npy'
-    np.save(saveFile, np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 199, 299, 301, 399]))
+    np.save(saveFile, np.array(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '199', '299', '301', '399']))
 
 # Compute the the positon and velocity of a given SPKID, start/end time, and number of calculated points
 def computeBody(spkid, start_time = 'Jun 20, 2000', end_time = 'Dec 1, 2030', points = 4000, center = 'SOLAR SYSTEM BARYCENTER'):
 
     spice.furnsh("./data/metaKernel.txt")
-    pathSPK = "./data/" + "{}.bsp"
-    spice.load(pathSPK.format(spkid))
+    if spkid not in STANDARD_LIB:
+        pathSPK = "./data/" + spkid + ".bsp"
+        spice.furnsh(pathSPK.format(spkid))
 
     utc = [start_time, end_time]
+    print(utc)
     etOne = spice.str2et(utc[0])
     etTwo = spice.str2et(utc[1])
 
@@ -93,11 +97,11 @@ class Time():
         self.length = lengthInDays
 
         self.endDay = self.day + lengthInDays
-        self.endMonth = self.month + self.endDay % 30
-        self.endYear = self.year + self.endMonth % 12
+        self.endMonth = self.month + self.endDay // 30
+        self.endYear = self.year + self.endMonth // 12
         
-        self.endMonth = self.endMonth // 12
-        self.endDay = self.endDay // 30
+        self.endMonth = self.endMonth % 12
+        self.endDay = self.endDay % 30
 
     def returnStart(self):
         outputStr = Time.MONTHS[self.month] + ' {}, {}'

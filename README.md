@@ -16,6 +16,9 @@ This will install the following dependancies into your a new conda environment c
 
 - numpy
 - ipykernel
+- matplotlib
+- scipy
+- spiceypy
 
 To create a Python kernel for Jupyter to get access to, run the following command:
 
