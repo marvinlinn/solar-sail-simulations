@@ -1,3 +1,5 @@
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import functions.body as bd
@@ -57,12 +59,13 @@ def plotbodies(bodies):
     ax.legend()
     plt.show()
 
-def animatebodies(bodies, duration, tstep, step=1):
+def animatebodies(bodies, tstep=1):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
     #creating lines for each body
     lines = np.array([])
+    duration = bodies[0].locations.T[0].size
 
     for b in bodies:
         data = b.locations.T
