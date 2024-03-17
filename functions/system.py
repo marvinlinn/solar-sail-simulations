@@ -18,9 +18,6 @@ class System:
     def add_body(self, body):
         self.bodies.append(body)
 
-    def add_bodies(self, bodies):
-        self.bodies = self.bodies + bodies
-
     def propogateBodies(self, timestep):
         for celestialBody in self.bodies:
             celestialBody.propogate(timestep)
@@ -38,7 +35,7 @@ class SolarSystem(System):
     NEPTUNE = body.Body("sun", np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0]), 1.024E+26)
     PLUTO = body.Body("sun", np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0]), 1.30900E+22)
 
-    SOLAR_BODIES = [SUN, MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE, PLUTO]
+    SOLAR_BODIES = np.array([SUN, MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE, PLUTO])
 
     def __init__(self, name):
         self.name = name
