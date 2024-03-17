@@ -26,7 +26,7 @@ def requestData(spkid, Time, step):
     return computeBody(spkid, Time.returnStart(), Time.returnEnd(), points=Time.returnPoints(step))
 
 # Computes Data for an ARRAY of spkids, given Time object, and step size
-def requestDataSat(spkid, Time, step):
+def requestDataSet(spkid, Time, step):
     saveFile = './data/save.npy'
     existingSPK = np.load(saveFile)
     for i in spkid:
@@ -61,7 +61,6 @@ def computeBody(spkid, start_time = 'Jun 20, 2000', end_time = 'Dec 1, 2030', po
         spice.furnsh(pathSPK.format(spkid))
 
     utc = [start_time, end_time]
-    print(utc)
     etOne = spice.str2et(utc[0])
     etTwo = spice.str2et(utc[1])
 

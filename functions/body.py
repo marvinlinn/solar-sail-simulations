@@ -5,6 +5,8 @@ By Andrew Ji & Marvin Lin
 March 2024
 '''
 import numpy as np
+import math
+import stateCollection.spiceInterface as spice
 
 class Body:
     def __init__(self, name, position, velocity, acceleration, mass):
@@ -16,9 +18,34 @@ class Body:
         self.locations = np.array([position])
 
 class CelestialBody(Body):
-    def __init__(self, name, spkid, position, mass, velocity=None, acceleration=None):
+    min_display_size = 10
+    display_log_base = 10
+    def __init__(self, name, spkid, system, timeObj, mass, color='black', acceleration=None):
         self.spkid = spkid
+        self.system = system
+        self.color = color
+        self.mass = mass
+        position, velocity = spice.requestData(spkid, timeObj, 5)
+        self.display_size = max(
+            math.log(self.mass, self.display_log_base)/2,
+            self.min_display_size,
+        )
+        self.system.add_body(self)
         super().__init__(name, position, velocity, acceleration, mass)
+        self.locations = position
+
+    def positon(self, timestep):
+        return self.position[timestep]
+    
+    def draw(self, timestep):
+        self.system.ax.plot(
+            self.position[0][timestep],
+            self.position[1][timestep],
+            self.position[2][timestep],
+            marker="o",
+            markersize=self.display_size,
+            color=self.color
+        )
 
 class SatelliteBody(Body):
 
