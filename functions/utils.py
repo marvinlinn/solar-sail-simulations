@@ -65,10 +65,13 @@ def animatebodies(bodies, tstep=1):
 
     #creating lines for each body
     lines = np.array([])
-    duration = bodies[0].locations.T[0].size
+    duration = bodies[0].locations[0][0].size # for some reason the data is in a redundant array
+
+    print(duration)
+    print(bodies[0].locations[0])
 
     for b in bodies:
-        data = b.locations.T
+        data = b.locations[0]
         ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], label=b.name)
         lines = np.append(lines, np.array([ln]))
     
@@ -76,24 +79,25 @@ def animatebodies(bodies, tstep=1):
         for n in range(len(bodies)):
             ln = lines[n]
             body = bodies[n]
-            data = body.locations.T
+            data = body.locations[0]
             ln.set_data(data[:2, :int(frame*tstep)])
             ln.set_3d_properties(data[2, :int(frame*tstep)])
 
     # Setting the axes properties
-    ax.set_xlim3d([-1E+9, 1E+9])
+    ax.set_xlim3d([-5E+9, 5E+9])
     ax.set_xlabel('X')
 
-    ax.set_ylim3d([-1E+9, 1E+9])
+    ax.set_ylim3d([-5E+9, 5E+9])
     ax.set_ylabel('Y')
 
-    ax.set_zlim3d([-1E+9, 1E+9])
+    ax.set_zlim3d([-5E+9, 5E+9])
     ax.set_zlabel('Z')
     ax.legend()
+    plt.title("Solar Sytem Animation from Jun 20, 2000 to Dec 1, 2030")
 
     numframes = int(duration/tstep)
 
     ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
-    #ani.save('matplot003.gif', writer='imagemagick')
+    ani.save('solarsystem.gif')
     plt.show()
             
