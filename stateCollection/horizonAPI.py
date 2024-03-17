@@ -7,8 +7,6 @@ https://ssd-api.jpl.nasa.gov/doc/horizons.html
 By Marvin Lin
 March 2024
 '''
-
-import sys
 import json
 import base64
 import requests
@@ -22,7 +20,7 @@ def getSPK(spkid, start_time='2030-01-01', stop_time='2031-01-01'):
     # IMPORTANT: You must encode the "=" as "%3D" and the ";" as "%3B" in the
     #            Horizons COMMAND parameter specification.
     url += "?format=json&EPHEM_TYPE=SPK&OBJ_DATA=NO"
-    url += "&COMMAND='DES%3D{}%3B'&START_TIME='{}'&STOP_TIME='{}'".format(spkid, start_time, stop_time)
+    url += "&COMMAND='{}'&START_TIME='{}'&STOP_TIME='{}'".format(spkid, start_time, stop_time)
 
     # Submit the API request and decode the JSON-response:
     response = requests.get(url)

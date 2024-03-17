@@ -7,7 +7,6 @@ March 2024
 import numpy as np
 
 class Body:
-
     def __init__(self, name, position, velocity, acceleration, mass):
         self.name = name
         self.position = position
@@ -15,6 +14,16 @@ class Body:
         self.acceleration = acceleration
         self.mass = mass
         self.locations = np.array([position])
+
+class CelestialBody(Body):
+    def __init__(self, name, spkid, position, mass, velocity=None, acceleration=None):
+        self.spkid = spkid
+        super().__init__(self, name, position, velocity, acceleration, mass)
+
+class SatelliteBody(Body):
+
+    def __init__(self, name, position, velocity, acceleration, mass):
+        super().__init__(self, name, position, velocity, acceleration, mass)
 
     # Increments the simulation by the designated timestep
     def propogate(self, timestep):

@@ -1,3 +1,3 @@
 import stateCollection.horizonAPI as horizon
 
-horizon.getSPK(2000001)
+horizon.getSPK(5)
