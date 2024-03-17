@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import functions.body as bd
+import matplotlib.animation as animation
 #important constants:
 G = 6.6743E-11
 
@@ -54,5 +55,42 @@ def plotbodies(bodies):
         ax.plot(x,y,z, label=b.name)
 
     ax.legend()
-    plt.show()              
+    plt.show()
+
+def animatebodies(bodies, duration, tstep, step=1):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    #creating lines for each body
+    lines = np.array([])
+
+    for b in bodies:
+        data = b.locations.T
+        ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], label=b.name)
+        lines = np.append(lines, np.array([ln]))
+    
+    def update(frame, bodies, lines): # lines and bodies in the same order
+        for n in range(len(bodies)):
+            ln = lines[n]
+            body = bodies[n]
+            data = body.locations.T
+            ln.set_data(data[:2, :int(frame*tstep)])
+            ln.set_3d_properties(data[2, :int(frame*tstep)])
+
+    # Setting the axes properties
+    ax.set_xlim3d([-1E+9, 1E+9])
+    ax.set_xlabel('X')
+
+    ax.set_ylim3d([-1E+9, 1E+9])
+    ax.set_ylabel('Y')
+
+    ax.set_zlim3d([-1E+9, 1E+9])
+    ax.set_zlabel('Z')
+    ax.legend()
+
+    numframes = int(duration/tstep)
+
+    ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
+    #ani.save('matplot003.gif', writer='imagemagick')
+    plt.show()
             
