@@ -1,7 +1,6 @@
 \begindata
 
-KERNELS_TO_LOAD = ( './data/20000001.bsp',
-                    './data/latest_leapseconds.tls',
+KERNELS_TO_LOAD = ( './data/latest_leapseconds.tls',
                     './data/de430.bsp')
  
 \begintext

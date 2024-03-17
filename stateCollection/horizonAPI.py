@@ -11,7 +11,7 @@ import json
 import base64
 import requests
 
-def getSPK(spkid, start_time='2030-01-01', stop_time='2031-01-01'):
+def getSPK(spkid, start_time='2000-01-01', stop_time='2060-01-01'):
     # Define API URL and SPK filename:
     url = 'https://ssd.jpl.nasa.gov/api/horizons.api'
     spk_filename = 'spk_file.bsp'
