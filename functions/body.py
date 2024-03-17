@@ -27,7 +27,7 @@ class CelestialBody(Body):
         self.mass = mass
         position, velocity = spice.requestData(spkid, timeObj, 5)
         self.display_size = max(
-            math.log(self.mass, self.display_log_base)/2,
+            math.log(self.mass, self.display_log_base)/1.5,
             self.min_display_size,
         )
         self.system.add_body(self)
