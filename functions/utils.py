@@ -28,7 +28,7 @@ def integrate(bodies, duration, numsteps):
     for n in range(numsteps):
         statechange(bodies)
         for b in bodies:
-            b.propogate(duration/(numsteps*1.0))        
+            b.propagate(duration/(numsteps*1.0))        
 
 def statechange(bodies):
     

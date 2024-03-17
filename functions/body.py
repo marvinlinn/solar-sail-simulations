@@ -26,7 +26,7 @@ class SatelliteBody(Body):
         super().__init__(name, position, velocity, acceleration, mass)
 
     # Increments the simulation by the designated timestep
-    def propogate(self, timestep):
+    def propagate(self, timestep):
         newVelocity = self.velocity + self.acceleration * timestep
         newPosition = self.position + ((self.velocity + newVelocity) * timestep)/2
         self.velocity = newVelocity
