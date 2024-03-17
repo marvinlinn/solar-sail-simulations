@@ -68,5 +68,26 @@ class SatelliteBody(Body):
     def clearLocs(self):
         self.locations = np.array([])
 
+class SolarSail(SatelliteBody):
+
+    #includes the angles of the solar sail in order to determine solar sail acceleration
+    def __init__(self, name, position, velocity, acceleration, yawAngle, pitchAngle=0, rollAngle=0):
+        self.mass = 0.01 #10 gram mass
+        self.yawAngle = yawAngle #radians relative to the velocity vector & rollAngle
+        self.pitchAngle = pitchAngle #radians relative to the velocity vector & rollAngle
+        self.rollAngle = rollAngle #radians, 0 means in the same plane as the orbit of the planets 
+        super().__init__(name, position, velocity, acceleration, self.mass)
+    
+    def propagate(self, timestep):
+        self.determineSolarAccel()
+        super().propogate(timestep)
+    
+    #currently only considering the yaw Angle
+    def determineSolarAccel(self):
+        solarRadiationVector = self.postion  
+        return
+    
+    def setYaw(self, angle):
+        self.yawAngle = angle
 
     
