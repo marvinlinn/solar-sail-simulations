@@ -76,5 +76,5 @@ class SolarSystem(System):
         numframes = int(4800/10)
 
         ani = animation.FuncAnimation(self.fig, update, numframes,interval=100/numframes, blit=False)
-        ani.save('solarsystem.gif')
+        #ani.save('solarsystem.gif')
         plt.show()
