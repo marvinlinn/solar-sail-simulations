@@ -7,6 +7,7 @@ March 2024
 import numpy as np
 import math
 import stateCollection.spiceInterface as spice
+import functions.system as system
 
 class Body:
     def __init__(self, name, position, velocity, acceleration, mass):
@@ -25,23 +26,24 @@ class CelestialBody(Body):
         self.system = system
         self.color = color
         self.mass = mass
-        position, velocity = spice.requestData(spkid, timeObj, 5)
+        self.timeStep = 5 #in hours
+        position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
         self.display_size = max(
-            math.log(self.mass, self.display_log_base)/1.5,
+            math.log(self.mass, self.display_log_base)/2,
             self.min_display_size,
         )
         self.system.add_body(self)
         super().__init__(name, position, velocity, acceleration, mass)
         self.locations = position
 
-    def positon(self, timestep):
-        return self.position[timestep]
+    def positon(self, currStep):
+        return self.position[currStep]
     
-    def draw(self, timestep):
+    def draw(self, currStep):
         self.system.ax.plot(
-            self.position[0][timestep],
-            self.position[1][timestep],
-            self.position[2][timestep],
+            self.position[0][currStep],
+            self.position[1][currStep],
+            self.position[2][currStep],
             marker="o",
             markersize=self.display_size,
             color=self.color
@@ -84,7 +86,7 @@ class SolarSail(SatelliteBody):
     
     #currently only considering the yaw Angle
     def determineSolarAccel(self):
-        solarRadiationVector = self.postion  
+        solarRadiationVector = self.postion - system.  
         return
     
     def setYaw(self, angle):

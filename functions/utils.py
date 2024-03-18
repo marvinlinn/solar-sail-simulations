@@ -24,6 +24,10 @@ def gravaccel(p1, p2, m1, m2):
 def bodyaccel(m1, m2):
     return gravaccel(m1.position, m2.position, m1.mass, m2.mass)
 
+'''
+Legacy integrator used for determining ALL planet & satellite positions, modified one below
+'''
+
 def integrate(bodies, duration, numsteps):
     for n in range(numsteps):
         statechange(bodies)
@@ -46,6 +50,15 @@ def statechange(bodies):
             bodies[b].acceleration = bodies[b].acceleration + accelB
             b += 1
 
+'''
+Modified Integrator used to simulate solar sail trajectories without calculating celestial body posiitons
+'''
+
+
+
+'''
+Plotting and animation util functions below.
+'''
 def plotbodies(bodies):
     ax = plt.figure().add_subplot(projection='3d')
     
