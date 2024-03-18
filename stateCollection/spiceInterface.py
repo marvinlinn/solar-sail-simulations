@@ -13,9 +13,23 @@ import spiceypy as spice
 import stateCollection.horizonAPI as horizon
 from enum import Enum
 
+# Standard library of SPK's given in the de430.bsp binary file
 STANDARD_LIB = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '199', '299', '301', '399']
 
-# Computes Data for a single spkid, given Time object, and step size
+'''
+[FOR PUBLIC] requestData
+Takes in an SPKID, Time object, and step size and return an array of positions and velocities (magnitude)
+
+Inputs:
+String spkid - A SPKID designated by NASA JPL Horizons which identifies the body of interest
+Time Time - A Time object which defines the time from of interest.
+Integer step - Step size between each data point, in hours.
+
+Outputs:
+Integer[][] positions - An array of positions with the given step sizes with dimensions (3, # of points)
+Integer[] velocities - An array of velocity magnitudies with given step sizes with deminsion (1, #ofpoints)
+
+'''
 def requestData(spkid, Time, step):
     saveFile = './data/save.npy'
     existingSPK = np.load(saveFile)
@@ -25,7 +39,20 @@ def requestData(spkid, Time, step):
 
     return computeBody(spkid, Time.returnStart(), Time.returnEnd(), points=Time.returnPoints(step))
 
-# Computes Data for an ARRAY of spkids, given Time object, and step size
+'''
+[FOR PUBLIC] requestDatasat
+Takes in an array of SPKIDs, Time object, and step size and return an array of positions and velocities (magnitude). Completes batch processing on any given array of SPKIDs.
+
+Inputs:
+String[] spkid - An array of SPKIDs designated by NASA JPL Horizons which identifies the bodies of interest
+Time Time - A Time object which defines the time from of interest.
+Integer step - Step size between each data point, in hours.
+
+Outputs:
+Integer[][][] positions - An array of positions with the given step sizes with dimensions (len(spkid), 3, # of points)
+Integer[][] velocities - An array of velocity magnitudies with given step sizes with deminsion (len(spkid), 1, #ofpoints)
+
+'''
 def requestDataSet(spkid, Time, step):
     saveFile = './data/save.npy'
     existingSPK = np.load(saveFile)
