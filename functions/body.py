@@ -36,7 +36,7 @@ class CelestialBody(Body):
         super().__init__(name, position, velocity, acceleration, mass)
         self.locations = position
 
-    def positon(self, currStep):
+    def getPositon(self, currStep):
         return self.position[currStep]
     
     def draw(self, currStep):
@@ -80,15 +80,16 @@ class SolarSail(SatelliteBody):
         self.rollAngle = rollAngle #radians, 0 means in the same plane as the orbit of the planets 
         super().__init__(name, position, velocity, acceleration, self.mass)
     
-    def propagate(self, timestep):
-        self.determineSolarAccel()
+    def propagate(self, timestep, currstep, planetarysys):
+        self.determineSolarAccel(currstep, planetarysys)
         super().propogate(timestep)
     
     #currently only considering the yaw Angle
-    def determineSolarAccel(self):
-        solarRadiationVector = self.postion - system.  
+    def determineSolarAccel(self, currstep, planetarysys):
+        solarRadiationVector = self.postion - planetarysys.SUN.getPositon(currstep)
+        
         return
-    
+     
     def setYaw(self, angle):
         self.yawAngle = angle
 

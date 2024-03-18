@@ -54,7 +54,16 @@ def statechange(bodies):
 Modified Integrator used to simulate solar sail trajectories without calculating celestial body posiitons
 '''
 
-
+def rotate(vector, direction, degrees):
+    rads = degrees * 2 * np.pi / 360
+    if direction == "yaw":
+        rotmatrix = np.array([[np.cos(rads), -np.sin(rads), 0],[np.sin(rads), np.cos(rads), 0],[0, 0, 1]])
+        newvect = np.dot(rotmatrix, vector)
+        return newvect
+    elif direction == "pitch":
+        rotmatrix = np.array([[1, 0, 0],[0, np.cos(rads), -np.sin(rads)],[0, np.sin(rads), np.cos(rads)]])
+        newvect = np.dot(rotmatrix, vector)
+        return newvect
 
 '''
 Plotting and animation util functions below.
