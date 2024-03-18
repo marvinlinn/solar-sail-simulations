@@ -19,21 +19,24 @@ span = np.arange(0, 3.2e7, 1e5)
 sail = body.SolarSail("sail1", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[0.6, -0.6, 0]]))
 sail2 = body.SolarSail("sail2", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[0.6, 0.6, 0.6]]))
 sail3 = body.SolarSail("sail3", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[-0.6, -0.6, -0.6]]))
+sail2ivp = body.SolarSail("sail2ivp", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[0.6, -0.6, 0.6]]))
 
 newsailLocs = integ.odeint(utils.npODESailGenerator, np.array([AU, 0, 0, 0, 30, 0]),span, args=(sail,))
 newsailLocs2 = integ.odeint(utils.npODESailGenerator, np.array([AU, 0, 0, 0, 30, 0]),span, args=(sail2,))
 newsailLocs3 = integ.odeint(utils.npODESailGenerator, np.array([AU, 0, 0, 0, 30, 0]),span, args=(sail3,))
 
-#saillocs = integ.solve_ivp(utils.npSailGenerator, [0, 3.2e7], np.array([AU, 0, 0, 0, 30, 0]), rtol=1e-8, args=[sail])
-sail.locations = np.array(newsailLocs).T[:3,:]
+ivpsaillocs = integ.solve_ivp(utils.npSailGenerator, [0, 3.2e7], np.array([AU, 0, 0, 0, 30, 0]), rtol=1e-8, args=[sail2ivp], t_eval=span)
+sail2ivp.locations = ivpsaillocs.y[:3, :]
+print (sail2ivp.locations)
+#sail.locations = np.array(newsailLocs).T[:3,:]
 sail2.locations = np.array(newsailLocs2).T[:3, :]
-sail3.locations = np.array(newsailLocs3).T[:3, :]
+#sail3.locations = np.array(newsailLocs3).T[:3, :]
 
 #print(np.array(newsailLocs).T[:3,:])
 #print(np.linalg.norm(np.array([1,1,1,1])))
 #plt.plot(saillocs.y[0], saillocs.y[1])
 #print(len(sail.locations[0]))
-utils.animatebodies(np.array([sail, sail2, sail3]))
+utils.animatebodies(np.array([sail2ivp, sail2]))
 #plt.show()
 #utils.animatebodies(np.append(solar_system.bodies), 15)
 

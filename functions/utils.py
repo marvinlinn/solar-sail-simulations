@@ -101,6 +101,7 @@ mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
 AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
+#current system in place for sail calculations
 def npSailGenerator(t, s, sail):
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
@@ -111,6 +112,8 @@ def npSailGenerator(t, s, sail):
     atotal = asun + asail
     return np.append(v, atotal)
 
+#another implementation used for odeint based systems
+'''
 def npODESailGenerator(s, t, sail):
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
@@ -120,8 +123,10 @@ def npODESailGenerator(s, t, sail):
     asail = (beta * mu / np.dot(r, r) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
     atotal = asun + asail
     return np.append(v, atotal)
-    
+'''
 
+# reference code for what all the sail odes are based on    
+'''
 def simpleSailGenerator(t, s, cone):
     rsquared = s[0]**2 + s[1]**2
     rcubed = (rsquared)**(3/2)
@@ -132,7 +137,7 @@ def simpleSailGenerator(t, s, cone):
     asailx = asail*math.cos(theta+cone)
     asaily = asail*math.sin(theta+cone)
     return [s[2], s[3], asunx+asailx, asuny+asaily]
-
+'''
 
 '''
 Plotting and animation util functions below.
