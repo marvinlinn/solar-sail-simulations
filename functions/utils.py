@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import math
 #important constants:
 G = 6.6743E-11
 
 P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
-AU = 1.496E+11 #meters -> length of AU
-
-mu = 1.327E+20 / 1E+9 #km^3/s^2
-beta = 0.15
+mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
+AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
+beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
 '''
 General Utility functions used for a variety of applications across the project.
@@ -94,7 +94,33 @@ def planetaryAccel(planet, spacecraft, currStep): #cause position is garbage now
 
 '''
 Simulations based on the ODE system
+s = [x, y, z, vx, vy, vz]
+sret = [vx, vy, vz, ax, ay, az]
 '''
+mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
+AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
+beta = 0.15 # ratio of peak solar sail force to sun's gravity
+
+def npSailGenerator(t, s, sail):
+    r = np.array([s[0], s[1], s[2]])
+    v = np.array([s[3], s[4], s[5]])
+    coneAngle = sail.getCurrentConeAngle(t)
+    asun = (-mu/(np.linalg.norm(r)**3)) * r
+    theta = math.atan2(r[1], r[0])
+    asail = (beta * mu / np.dot(r, r) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
+    atotal = asun + asail
+    return np.append(v, atotal)
+
+def npODESailGenerator(s, t, sail):
+    r = np.array([s[0], s[1], s[2]])
+    v = np.array([s[3], s[4], s[5]])
+    coneAngle = sail.getCurrentConeAngle(t)
+    asun = (-mu/(np.linalg.norm(r)**3)) * r
+    theta = math.atan2(r[1], r[0])
+    asail = (beta * mu / np.dot(r, r) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
+    atotal = asun + asail
+    return np.append(v, atotal)
+    
 
 def simpleSailGenerator(t, s, cone):
     rsquared = s[0]**2 + s[1]**2
