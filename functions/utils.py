@@ -7,6 +7,9 @@ G = 6.6743E-11
 P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
 AU = 1.496E+11 #meters -> length of AU
 
+mu = 1.327E+20 / 1E+9 #km^3/s^2
+beta = 0.15
+
 '''
 General Utility functions used for a variety of applications across the project.
 '''
@@ -90,9 +93,24 @@ def planetaryAccel(planet, spacecraft, currStep): #cause position is garbage now
     return gravaccel(planetPos, spacecraft.pos, planet.mass, spacecraft.mass)
 
 '''
-Plotting and animation util functions below.
+Simulations based on the ODE system
 '''
 
+def simpleSailGenerator(t, s, cone):
+    rsquared = s[0]**2 + s[1]**2
+    rcubed = (rsquared)**(3/2)
+    asunx = -mu*s[0]/rcubed
+    asuny = -mu*s[1]/rcubed
+    theta = math.atan2(s[1],s[0])
+    asail = beta*mu/rsquared*math.cos(cone)**2
+    asailx = asail*math.cos(theta+cone)
+    asaily = asail*math.sin(theta+cone)
+    return [s[2], s[3], asunx+asailx, asuny+asaily]
+
+
+'''
+Plotting and animation util functions below.
+'''
 def plotbodies(bodies):
     ax = plt.figure().add_subplot(projection='3d')
     
