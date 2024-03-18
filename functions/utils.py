@@ -1,14 +1,15 @@
-
-
 import numpy as np
 import matplotlib.pyplot as plt
-import functions.body as bd
 import matplotlib.animation as animation
 #important constants:
 G = 6.6743E-11
 
 P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
 AU = 1.496E+11 #meters -> length of AU
+
+'''
+General Utility functions used for a variety of applications across the project.
+'''
 
 #calculates the distance between 2 points in 3 dimensions
 def distance(p1, p2):
@@ -68,9 +69,30 @@ def rotate(vector, direction, degrees):
         newvect = np.dot(rotmatrix, vector)
         return newvect
 
+def solarSailIntegrate(system, sailbodies):
+    numsteps = 4000 #TODO: make this not hardcoded!!!!
+    for n in range(numsteps):
+        solarSailStateChange(system, sailbodies, n)
+        for b in sailbodies:
+            b.propagate(system.SUN.timeStep)
+
+def solarSailStateChange(system, sailbodies, currStep):
+    for sail in sailbodies: # set all the accelerations to zero
+        sail.acceleration = np.array([0,0,0])
+
+    for sail in sailbodies: # calculate the gravitational accelerations seen by the different sails
+        for planet in system: # we don't mess with planetary acceleration since its on a predetermined path
+            planetaccel, sailaccel = planetaryAccel(sail, planet)
+            sail.acceleration = sail.acceleration + sailaccel
+
+def planetaryAccel(planet, spacecraft, currStep): #cause position is garbage now
+    planetPos = planet.getPosition(currStep)
+    return gravaccel(planetPos, spacecraft.pos, planet.mass, spacecraft.mass)
+
 '''
 Plotting and animation util functions below.
 '''
+
 def plotbodies(bodies):
     ax = plt.figure().add_subplot(projection='3d')
     

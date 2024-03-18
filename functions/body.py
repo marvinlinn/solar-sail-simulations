@@ -88,12 +88,13 @@ class SolarSail(SatelliteBody):
     
     #currently only considering the yaw Angle
     def determineSolarAccel(self, currstep, planetarysys):
-        solarRadiationVector = self.postion - planetarysys.SUN.getPositon(currstep)
-        solarRadiationVectorMag = np.sqrt(np.dot(solarRadiationVector, solarRadiationVector))
-        sailNormal = (utils.rotate(self.velocity, "yaw", self.yawAngle))/(np.dot(self.velocity, self.velocity)) #unit vector
-        alpha = np.arccos((np.dot(solarRadiationVector, sailNormal))/ 
-                          (solarRadiationVectorMag * 1))
-        radiationAccel = utils.P0 * (np.cos(alpha) ** 2) * ((utils.AU/solarRadiationVector)**2) * self.sailArea / self.mass
+        solarRadiationVector = self.postion - planetarysys.SUN.getPositon(currstep) # distance vector between current sun location and solarsail location
+        solarRadiationVectorMag = np.linalg.norm(solarRadiationVector)
+        
+        sailNormal = (utils.rotate(self.velocity, "yaw", self.yawAngle))/(np.linalg.norm(self.velocity)) # unit vector
+        alpha = np.arccos((np.dot(solarRadiationVector, sailNormal))/(solarRadiationVectorMag * 1)) # incident angle of the solar radiation on the sail
+        
+        radiationAccel = utils.P0 * (np.cos(alpha) ** 2) * ((utils.AU/solarRadiationVector)**2) * self.sailArea / self.mass # acceleration due to the radiation present
         self.acceleration = self.acceleration + (radiationAccel * sailNormal)
      
     def setYaw(self, angle):
