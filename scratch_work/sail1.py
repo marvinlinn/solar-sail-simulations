@@ -24,8 +24,9 @@ def Fsun(t,s):
 
 def Fsail(t,s,cone):
     cone = cone(t, s)
-    pos = np.array(s[0:1])
-    rcubed = np.dot(pos,pos)**(3/2)
+    pos = np.array(s[0:2])
+    rsquared = np.dot(pos,pos)
+    rcubed = rsquared**(3/2)
     asun = -mu*pos/rcubed
     theta = math.atan2(s[1],s[0])
     asail = beta*mu/rsquared*math.cos(cone)**2
@@ -41,10 +42,7 @@ def cone_angle_factory(a, t_thresholds):
     def cone_angle(t, s):
         for i in range(instr_count):
             if t < t_thresholds[i]:
-                print(f'({t}, {t_thresholds[i]}, {i})')
                 break
-        print(i)
-        print(f'({t}, {a[i]})')
         return a[i]
 
     return cone_angle
