@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
+import functions.body as body
+import scipy.integrate as integ
 #important constants:
 G = 6.6743E-11
 
@@ -102,7 +104,7 @@ AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
 #current system in place for sail calculations
-def npSailGenerator(t, s, sail):
+def npSailODE(t, s, sail):
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
     coneAngle = sail.getCurrentConeAngle(t)
@@ -111,6 +113,16 @@ def npSailGenerator(t, s, sail):
     asail = (beta * mu / np.dot(r, r) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
     atotal = asun + asail
     return np.append(v, atotal)
+
+#sail creator, creates a sail object and solves the trajectory
+
+def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
+    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, trajectory)
+    span = np.arange(timeInterval[0], timeInterval[1], numsteps)
+    initialconditions = np.append(initLoc, initVel)
+    newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
+    newSail.locations = newSailLocs.y[:3, :]
+    return newSail
 
 #another implementation used for odeint based systems
 '''
