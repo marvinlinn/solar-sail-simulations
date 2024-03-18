@@ -7,6 +7,9 @@ import matplotlib.animation as animation
 #important constants:
 G = 6.6743E-11
 
+P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
+AU = 1.496E+11 #meters -> length of AU
+
 #calculates the distance between 2 points in 3 dimensions
 def distance(p1, p2):
     vect = p2 - p1

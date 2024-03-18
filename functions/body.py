@@ -8,6 +8,7 @@ import numpy as np
 import math
 import stateCollection.spiceInterface as spice
 import functions.system as system
+import functions.utils as utils
 
 class Body:
     def __init__(self, name, position, velocity, acceleration, mass):
@@ -75,9 +76,10 @@ class SolarSail(SatelliteBody):
     #includes the angles of the solar sail in order to determine solar sail acceleration
     def __init__(self, name, position, velocity, acceleration, yawAngle, pitchAngle=0, rollAngle=0):
         self.mass = 0.01 #10 gram mass
-        self.yawAngle = yawAngle #radians relative to the velocity vector & rollAngle
-        self.pitchAngle = pitchAngle #radians relative to the velocity vector & rollAngle
-        self.rollAngle = rollAngle #radians, 0 means in the same plane as the orbit of the planets 
+        self.sailArea = 1 #1 sq meter sail area
+        self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle
+        self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
+        self.rollAngle = rollAngle #degrees, 0 means in the same plane as the orbit of the planets 
         super().__init__(name, position, velocity, acceleration, self.mass)
     
     def propagate(self, timestep, currstep, planetarysys):
@@ -87,8 +89,12 @@ class SolarSail(SatelliteBody):
     #currently only considering the yaw Angle
     def determineSolarAccel(self, currstep, planetarysys):
         solarRadiationVector = self.postion - planetarysys.SUN.getPositon(currstep)
-        
-        return
+        solarRadiationVectorMag = np.sqrt(np.dot(solarRadiationVector, solarRadiationVector))
+        sailNormal = (utils.rotate(self.velocity, "yaw", self.yawAngle))/(np.dot(self.velocity, self.velocity)) #unit vector
+        alpha = np.arccos((np.dot(solarRadiationVector, sailNormal))/ 
+                          (solarRadiationVectorMag * 1))
+        radiationAccel = utils.P0 * (np.cos(alpha) ** 2) * ((utils.AU/solarRadiationVector)**2) * self.sailArea / self.mass
+        self.acceleration = self.acceleration + (radiationAccel * sailNormal)
      
     def setYaw(self, angle):
         self.yawAngle = angle
