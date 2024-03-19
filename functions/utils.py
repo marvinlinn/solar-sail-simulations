@@ -12,6 +12,9 @@ mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
 AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
+# Style constants:
+traj_opacity = 0.1
+
 '''
 General Utility functions used for a variety of applications across the project.
 '''
@@ -208,7 +211,7 @@ def animatebodies(bodies, tstep=1):
         ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], 
                       label=b.name, alpha=b.opacity)
         if b.show_traj:
-            ax.plot(data[0,:], data[1,:], data[2,:], alpha=0.1, color='black')
+            ax.plot(data[0,:], data[1,:], data[2,:], alpha=traj_opacity, color='black')
         lines = np.append(lines, np.array([ln]))
     
     def update(frame, bodies, lines): # lines and bodies in the same order
