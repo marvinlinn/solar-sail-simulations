@@ -173,7 +173,8 @@ def animatebodies(bodies, tstep=1):
 
     #creating lines for each body
     lines = np.array([])
-    duration = bodies[0].locations[0].size # for some reason the data is in a redundant array
+    print(bodies)
+    duration = bodies[0].locations.size # for some reason the data is in a redundant array
 
     print(duration)
     print(bodies[0].locations)
@@ -192,13 +193,13 @@ def animatebodies(bodies, tstep=1):
             ln.set_3d_properties(data[2, :int(frame*tstep)])
 
     # Setting the axes properties
-    ax.set_xlim3d([-5E+8, 5E+8])
+    ax.set_xlim3d([-1E+8, 1E+8])
     ax.set_xlabel('X')
 
-    ax.set_ylim3d([-5E+8, 5E+8])
+    ax.set_ylim3d([-1E+8, 1E+8])
     ax.set_ylabel('Y')
 
-    ax.set_zlim3d([-5E+8, 5E+8])
+    ax.set_zlim3d([-1E+8, 1E+8])
     ax.set_zlabel('Z')
     ax.legend()
     plt.title("Solar Sytem Animation from Jun 20, 2000 to Dec 1, 2030")

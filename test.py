@@ -40,10 +40,21 @@ span = np.arange(0, 3.2e7, 1e5)
 #plt.show()
 #utils.animatebodies(np.append(solar_system.bodies), 15)
 
-sail1 = utils.sailGenerator("sail1", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[0.6, -0.6, 0]]), [0, 3.2e7], 1e5)
-sail2 = utils.sailGenerator("sail2", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[-0.6, -0.6, 0]]), [0, 3.2e7], 1e5)
-sail3 = utils.sailGenerator("sail3", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[0.6, 0.6, 0]]), [0, 3.2e7], 1e5)
-utils.animatebodies(np.array([sail1, sail2, sail3]))
+#sail1 = utils.sailGenerator("sail1", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0, 2.6e6, 5.2e6, 7.8e6, 1.04e7,1.3e7,1.56e7, 1.82e7],[0.6, -0.6, 0]]), [0, 3.2e7], 1e5)
+#sail2 = utils.sailGenerator("sail2", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[-0.6, -0.6, 0]]), [0, 3.2e7], 1e5)
+#sail3 = utils.sailGenerator("sail3", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[0.6, 0.6, 0]]), [0, 3.2e7], 1e5)
+#utils.animatebodies(np.array([sail1, sail2, sail3]))
+
+sailset = np.array([])
+
+for n in range(3):
+    sailorientations = (np.random.random_sample((8,)) * 1.2) - 0.6
+    print(sailorientations)
+    newSail = utils.sailGenerator(("sail"+ str(n)), np.array([AU,0,0]), np.array([0,30,0]), 
+                                  np.array([[0, 2.6e6, 5.2e6, 7.8e6, 1.04e7,1.3e7, 1.56e7, 1.82e7], sailorientations]), [0, 1.82e7], 1e2)
+    sailset = np.append(sailset, newSail)  
+
+utils.animatebodies(sailset, 20)
 
 '''
 testing below
