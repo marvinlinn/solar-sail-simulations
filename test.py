@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integ
 
-solar_system = system.SolarSystem("solar")
+#solar_system = system.SolarSystem("solar")
 #solar_system.animateBodies()
 AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 

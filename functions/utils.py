@@ -140,9 +140,8 @@ def cone_angle_factory(a, t_thresholds):
 # TODO: ngl I think the term trajectory could be a bit confusing since we are 
 # controlling the trajectory of the inputs not the actual path of the spacecraft
 def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
-    print(f'traj: {trajectory}')
     coneAngle = cone_angle_factory(trajectory[1], trajectory[0])
-    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle)
+    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=True)
     span = np.arange(timeInterval[0], timeInterval[1], numsteps)
     initialconditions = np.append(initLoc, initVel)
     newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
@@ -206,16 +205,24 @@ def animatebodies(bodies, tstep=1):
 
     for b in bodies:
         data = b.locations
-        ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], label=b.name)
+        ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], 
+                      label=b.name, alpha=b.opacity)
+        if b.show_traj:
+            ax.plot(data[0,:], data[1,:], data[2,:], alpha=0.1, color='black')
         lines = np.append(lines, np.array([ln]))
     
     def update(frame, bodies, lines): # lines and bodies in the same order
-        for n in range(len(bodies)):
+        for n, body in enumerate(bodies):
             ln = lines[n]
-            body = bodies[n]
             data = body.locations
-            ln.set_data(data[:2, :int(frame*tstep)])
-            ln.set_3d_properties(data[2, :int(frame*tstep)])
+            if body.path_style == 'past':
+                ln.set_data(data[:2, :int(frame*tstep)])
+                ln.set_3d_properties(data[2, :int(frame*tstep)])
+            elif body.path_style == 'trail':
+                front = int(frame*tstep)
+                back = int(max(0, front - body.trail_length))
+                ln.set_data(data[:2, back:front])
+                ln.set_3d_properties(data[2, back:front])
 
     # Setting the axes properties
     ax.set_xlim3d([-1E+8, 1E+8])
@@ -234,4 +241,3 @@ def animatebodies(bodies, tstep=1):
     ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
     #ani.save('solarsystem.gif')
     plt.show()
-            

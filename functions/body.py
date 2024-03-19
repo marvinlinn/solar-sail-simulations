@@ -11,7 +11,8 @@ import functions.system as system
 import functions.utils as utils
 
 class Body:
-    def __init__(self, name, position, velocity, acceleration, mass):
+    def __init__(self, name, position, velocity, acceleration, mass, opacity=1, 
+                 path_style='past', trail_length=5e3, show_traj=False):
         self.name = name
         self.position = position
         self.velocity = velocity
@@ -19,10 +20,18 @@ class Body:
         self.mass = mass
         self.locations = np.array([position])
 
+        # plot style
+        self.opacity = opacity
+        self.path_style = path_style
+        self.trail_length = trail_length
+        self.show_traj = show_traj
+
 class CelestialBody(Body):
     min_display_size = 10
     display_log_base = 10
-    def __init__(self, name, spkid, system, timeObj, mass, color='black', acceleration=None):
+    def __init__(self, name, spkid, system, timeObj, mass, color='black', 
+                 acceleration=None, opacity=1, path_style='past', 
+                 trail_length=5e3, show_traj=False):
         self.spkid = spkid
         self.system = system
         self.color = color
@@ -34,7 +43,8 @@ class CelestialBody(Body):
             self.min_display_size,
         )
         self.system.add_body(self)
-        super().__init__(name, position, velocity, acceleration, mass)
+        super().__init__(name, position, velocity, acceleration, mass,
+                         opacity, path_style, trail_length, show_traj)
         self.locations = position
 
     def getPositon(self, currStep):
@@ -52,8 +62,10 @@ class CelestialBody(Body):
 
 class SatelliteBody(Body):
 
-    def __init__(self, name, position, velocity, acceleration, mass):
-        super().__init__(name, position, velocity, acceleration, mass)
+    def __init__(self, name, position, velocity, acceleration, mass, opacity=1, 
+                 path_style='past', trail_length=5e3, show_traj=False):
+        super().__init__(name, position, velocity, acceleration, mass,
+                         opacity, path_style, trail_length, show_traj)
 
     # Increments the simulation by the designated timestep
     def propagate(self, timestep):
@@ -75,7 +87,9 @@ class SatelliteBody(Body):
 class SolarSail(SatelliteBody):
 
     #includes the angles of the solar sail in order to determine solar sail acceleration
-    def __init__(self, name, position, velocity, acceleration, yawAngle, coneAngle, pitchAngle=0, rollAngle=0):
+    def __init__(self, name, position, velocity, acceleration, yawAngle, 
+                 coneAngle, pitchAngle=0, rollAngle=0, opacity=1, 
+                 path_style='past', trail_length=5e3, show_traj=False):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         
@@ -86,7 +100,8 @@ class SolarSail(SatelliteBody):
         self.coneAngle = coneAngle # function mapping (t,s) -> angle
         self.currStep = 0 # current step in the trajectory
 
-        super().__init__(name, position, velocity, acceleration, self.mass)
+        super().__init__(name, position, velocity, acceleration, self.mass,
+                         opacity, path_style, trail_length, show_traj)
     
     def propagate(self, timestep, currstep, planetarysys):
         self.determineSolarAccel(currstep, planetarysys, coneAngle)
