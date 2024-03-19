@@ -142,7 +142,7 @@ def cone_angle_factory(a, t_thresholds):
 def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
     coneAngle = cone_angle_factory(trajectory[1], trajectory[0])
     newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=True)
-    span = np.arange(timeInterval[0], timeInterval[1], numsteps)
+    span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions = np.append(initLoc, initVel)
     newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
     newSail.locations = newSailLocs.y[:3, :]

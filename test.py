@@ -47,14 +47,14 @@ span = np.arange(0, 3.2e7, 1e5)
 
 sailset = np.array([])
 
-for n in range(3):
+for n in range(1000):
     sailorientations = (np.random.random_sample((8,)) * 1.2) - 0.6
     print(sailorientations)
     newSail = utils.sailGenerator(("sail"+ str(n)), np.array([AU,0,0]), np.array([0,30,0]), 
-                                  np.array([[0, 2.6e6, 5.2e6, 7.8e6, 1.04e7,1.3e7, 1.56e7, 1.82e7], sailorientations]), [0, 1.82e7], 1e2)
+                                  np.array([[0, 2.6e6, 5.2e6, 7.8e6, 1.04e7,1.3e7, 1.56e7, 1.82e7], sailorientations]), [0, 1.82e7], 1e3)
     sailset = np.append(sailset, newSail)  
 
-utils.animatebodies(sailset, 20)
+utils.animatebodies(sailset, 50)
 
 '''
 testing below
