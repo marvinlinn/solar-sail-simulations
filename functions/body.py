@@ -75,7 +75,7 @@ class SatelliteBody(Body):
 class SolarSail(SatelliteBody):
 
     #includes the angles of the solar sail in order to determine solar sail acceleration
-    def __init__(self, name, position, velocity, acceleration, yawAngle, trajectory, pitchAngle=0, rollAngle=0):
+    def __init__(self, name, position, velocity, acceleration, yawAngle, coneAngle, pitchAngle=0, rollAngle=0):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         
@@ -83,14 +83,14 @@ class SolarSail(SatelliteBody):
         self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
         self.rollAngle = rollAngle #degrees, 0 means in the same plane as the orbit of the planets
         
-        self.trajectory = trajectory # array containing time and corresponding sail cone angle
+        self.coneAngle = coneAngle # function mapping (t,s) -> angle
         self.currStep = 0 # current step in the trajectory
 
         super().__init__(name, position, velocity, acceleration, self.mass)
     
     def propagate(self, timestep, currstep, planetarysys):
-        self.determineSolarAccel(currstep, planetarysys)
-        super().propogate(timestep)
+        self.determineSolarAccel(currstep, planetarysys, coneAngle)
+        super().propagate(timestep)
     
     #currently only considering the yaw Angle
     def determineSolarAccel(self, currstep, planetarysys):
@@ -106,17 +106,17 @@ class SolarSail(SatelliteBody):
     def setYaw(self, angle):
         self.yawAngle = angle
 
-
-    def getCurrentConeAngle(self,t):
-        if self.currStep + 1 >= len(self.trajectory[0]):
-            return self.trajectory[1][self.currStep]
-        elif self.trajectory[0][self.currStep + 1] < t: #find what step it is on
-            step = self.currStep + 1
-            print(step)
-            while step < len(self.trajectory[0]) and self.trajectory[0][step] < t:
-                step += 1
-            self.currStep = step - 1
-        return self.trajectory[1][self.currStep]
+    #TODO: fix traj
+    # def getCurrentConeAngle(self,t):
+    #     if self.currStep + 1 >= len(self.trajectory[0]):
+    #         return self.trajectory[1][self.currStep]
+    #     elif self.trajectory[0][self.currStep + 1] < t: #find what step it is on
+    #         step = self.currStep + 1
+    #         print(step)
+    #         while step < len(self.trajectory[0]) and self.trajectory[0][step] < t:
+    #             step += 1
+    #         self.currStep = step - 1
+    #     return self.trajectory[1][self.currStep]
 
 
     

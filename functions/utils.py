@@ -103,21 +103,46 @@ mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
 AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
-#current system in place for sail calculations
+# current system in place for sail calculations
 def npSailODE(t, s, sail):
+    coneAngle = sail.coneAngle(t, s)
+    print(f'cone: {coneAngle}')
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
-    coneAngle = sail.getCurrentConeAngle(t)
     asun = (-mu/(np.linalg.norm(r)**3)) * r
     theta = math.atan2(r[1], r[0])
     asail = (beta * mu / np.dot(r, r) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
     atotal = asun + asail
     return np.append(v, atotal)
 
-#sail creator, creates a sail object and solves the trajectory
+# sail cone angle function factory
+def cone_angle_factory(a, t_thresholds):
+    instr_count = len(a)
+    i_prev = [0]
 
+    assert len(t_thresholds) == instr_count, \
+            'There should be one angle per time threshold'
+
+    def cone_angle(t, s):
+        if t < t_thresholds[i_prev[0]] and \
+                (i_prev[0] == 0 or t > t_thresholds[i_prev[0]]):
+            i = i_prev
+        else:
+            for i in range(instr_count):
+                if t < t_thresholds[i]:
+                    break
+            i_prev[0] = i
+        return a[i]
+
+    return cone_angle
+
+# sail creator, creates a sail object and solves the trajectory
+# TODO: ngl I think the term trajectory could be a bit confusing since we are 
+# controlling the trajectory of the inputs not the actual path of the spacecraft
 def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
-    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, trajectory)
+    print(f'traj: {trajectory}')
+    coneAngle = cone_angle_factory(trajectory[1], trajectory[0])
+    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle)
     span = np.arange(timeInterval[0], timeInterval[1], numsteps)
     initialconditions = np.append(initLoc, initVel)
     newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
