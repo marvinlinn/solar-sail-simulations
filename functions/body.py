@@ -52,9 +52,9 @@ class CelestialBody(Body):
     
     def draw(self, currStep):
         self.system.ax.plot(
-            self.position[0][currStep],
-            self.position[1][currStep],
-            self.position[2][currStep],
+            self.locations[0][currStep],
+            self.locations[1][currStep],
+            self.locations[2][currStep],
             marker="o",
             markersize=self.display_size,
             color=self.color
@@ -88,8 +88,8 @@ class SolarSail(SatelliteBody):
 
     #includes the angles of the solar sail in order to determine solar sail acceleration
     def __init__(self, name, position, velocity, acceleration, yawAngle, 
-                 coneAngle, pitchAngle=0, rollAngle=0, opacity=1, 
-                 path_style='past', trail_length=5e3, show_traj=False):
+                 coneAngle, pitchAngle=0, rollAngle=0, opacity=.5, 
+                 path_style='past', trail_length=5e2, show_traj=False):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         

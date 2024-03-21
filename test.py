@@ -5,6 +5,7 @@ import functions.utils as utils
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integ
+import stateCollection.spiceInterface as spice
 
 #solar_system = system.SolarSystem("solar")
 #solar_system.animateBodies()
@@ -45,8 +46,8 @@ span = np.arange(0, 3.2e7, 1e5)
 #sail3 = utils.sailGenerator("sail3", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[0.6, 0.6, 0]]), [0, 3.2e7], 1e5)
 #utils.animatebodies(np.array([sail1, sail2, sail3]))
 
-sailset = np.array([])
 
+"""
 for n in range(1000):
     sailorientations = (np.random.random_sample((8,)) * 1.2) - 0.6
     print(sailorientations)
@@ -55,10 +56,94 @@ for n in range(1000):
     sailset = np.append(sailset, newSail)  
 
 utils.animatebodies(sailset, 50)
+"""
+
+'''
+Deliverable 
+
+# 6 different points varied between 0.6, 0, -0.6
+testTime = spice.Time(1, 1, 2000, 720) # 2 years
+timeSeconds = testTime.lengthSeconds
+
+#planet generation
+sys = system.SolarSystem("720 day sys", testTime)
+sysbds = sys.bodies
+numSteps = len(sysbds[0].locations[0])
+
+#trajectories generation
+trajs = np.array([[0,0,0,0,0,0,0]])
+possibleOrients = np.array([-0.6,0,0.6])
+timeInt = np.array([0, timeSeconds/6, (2*timeSeconds)/6, (3*timeSeconds)/6, (4*timeSeconds)/6, (5*timeSeconds)/6, timeSeconds])
+
+for a in possibleOrients:
+    for b in possibleOrients:
+        for c in possibleOrients:
+            for d in possibleOrients:
+                for e in possibleOrients:
+                    for f in possibleOrients:
+                        trajs = np.append(trajs, [[a,b,c,d,e,f,0]], axis=0)
+
+#sail generation
+#init conditions -> earth position, velocity must also be vectorized correctly
+initPos = sysbds[3].locations.T[0]
+initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(sysbds[3].locations.T[1]-sysbds[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
+initVel = initVelVec * 30
+sailset = np.array([])
+
+for n in range(len(trajs)):
+    newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel, 
+                                  np.array([timeInt, trajs[n]]), [0, timeSeconds], numSteps)
+    sailset = np.append(sailset, newSail)  
+
+utils.animatebodies(sailset, 50)
+
+#utils.animatebodies(sysbds)                        
+print(np.linalg.norm(initPos))
+
+print(initPos)
+print(initVelVec)
+'''
+
+'''
+less iterations hopefully less messy
+'''
+
+# 6 different points varied between 0.6, 0, -0.6
+testTime = spice.Time(1, 1, 2000, 720) # 2 years
+timeSeconds = testTime.lengthSeconds
+
+#planet generation
+sys = system.SolarSystem("720 day sys", testTime)
+sysbds = sys.bodies
+numSteps = len(sysbds[0].locations[0])
+
+#trajectories generation
+trajs = np.array([[0,0,0,0]])
+possibleOrients = np.array([-0.6,0,0.6])
+timeInt = np.array([0, timeSeconds/3, (2*timeSeconds)/3, timeSeconds])
+
+for a in possibleOrients:
+    for b in possibleOrients:
+        for c in possibleOrients:
+            trajs = np.append(trajs, [[a,b,c,0]], axis=0)
+
+#sail generation
+#init conditions -> earth position, velocity must also be vectorized correctly
+initPos = sysbds[3].locations.T[0]
+initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(sysbds[3].locations.T[1]-sysbds[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
+initVel = initVelVec * 30
+sailset = np.array([])
+
+for n in range(len(trajs)):
+    newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel, 
+                                  np.array([timeInt, trajs[n]]), [0, timeSeconds], numSteps)
+    sailset = np.append(sailset, newSail)  
+
+utils.animatebodies(np.append(sailset, sysbds), 10)
 
 '''
 testing below
-'''
+
 trajectory = np.array([[0, 5, 10, 16, 20],[1, 2, 3, 4, 5]])
 
 currStep = 0
@@ -73,7 +158,7 @@ def getCurrentConeAngle(trajectory,t,currStep):
     return trajectory[1][currStep]
 
 sailtest = body.SolarSail("test", np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0]), 0, trajectory)
-'''
+
 print(getCurrentConeAngle(trajectory, 1, currStep), currStep)
 print(getCurrentConeAngle(trajectory, 2, currStep), currStep)
 print(getCurrentConeAngle(trajectory, 11, currStep), currStep)

@@ -30,12 +30,13 @@ class System:
 
 class SolarSystem(System):
     
-    def __init__(self, name):
+    def __init__(self, name, time=spice.Time(1, 1, 2000, 1000)):
         self.name = name
         self.size = 10000
         self.timeStep = 0
 
-        timeObj = spice.Time(1, 1, 2000, 1000)
+        #timeObj = spice.Time(1, 1, 2000, 1000)
+        timeObj = time
 
         self.bodies = []
 

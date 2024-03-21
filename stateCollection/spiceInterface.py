@@ -121,6 +121,7 @@ class Time():
         self.day = day
         self.year = year
         self.length = lengthInDays
+        self.lengthSeconds = lengthInDays * 24 * 3600
 
         self.endDay = self.day + lengthInDays
         self.endMonth = self.month + self.endDay // 30

@@ -109,7 +109,7 @@ beta = 0.15 # ratio of peak solar sail force to sun's gravity
 # current system in place for sail calculations
 def npSailODE(t, s, sail):
     coneAngle = sail.coneAngle(t, s)
-    print(f'cone: {coneAngle}')
+    #print(f'cone: {coneAngle}')
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
     asun = (-mu/(np.linalg.norm(r)**3)) * r
@@ -200,11 +200,11 @@ def animatebodies(bodies, tstep=1):
 
     #creating lines for each body
     lines = np.array([])
-    print(bodies)
+    #print(bodies)
     duration = bodies[0].locations.size # for some reason the data is in a redundant array
 
-    print(duration)
-    print(bodies[0].locations)
+    #print(duration)
+    #print(bodies[0].locations)
 
     for b in bodies:
         data = b.locations
@@ -228,13 +228,13 @@ def animatebodies(bodies, tstep=1):
                 ln.set_3d_properties(data[2, back:front])
 
     # Setting the axes properties
-    ax.set_xlim3d([-1E+8, 1E+8])
+    ax.set_xlim3d([-2.5E+8, 2.5E+8])
     ax.set_xlabel('X')
 
-    ax.set_ylim3d([-1E+8, 1E+8])
+    ax.set_ylim3d([-2.5E+8, 2.5E+8])
     ax.set_ylabel('Y')
 
-    ax.set_zlim3d([-1E+8, 1E+8])
+    ax.set_zlim3d([-2.5E+8, 2.5E+8])
     ax.set_zlabel('Z')
     ax.legend()
     plt.title("Solar Sytem Animation from Jun 20, 2000 to Dec 1, 2030")
@@ -242,5 +242,32 @@ def animatebodies(bodies, tstep=1):
     numframes = int(duration/tstep)
 
     ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
-    #ani.save('solarsystem.gif')
+    ani.save('solarsystem.gif')
     plt.show()
+
+'''
+The Sim itself, streamlined function which takes in some inputs and synchronizes the planetary and solar sail animation
+TODO: figure this out, will hardcode atm
+'''
+#dumb function used to generate a shit tone of trajectories
+#orientations: array of orientations for the sail ex. [-0.6,0.6]
+#time: time object dictating the trajectory info
+#points: number of points
+'''
+def orientationVary(orientations, time, points):
+    trajectories = np.array([])
+    length = time.lengthSeconds
+    times = np.linspace(0, length, points)
+
+def orientationVaryHelper(arr, desiredlen, orientations):
+    if len(arr) == desiredlen:
+        return arr
+    else:
+        for a in arr:
+            for o in orientations:
+                orientationVaryHelper(np.append(arr, [o]), desiredlen, orientations)
+
+
+def generateSim(time):
+
+'''
