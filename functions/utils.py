@@ -113,8 +113,13 @@ def npSailODE(t, s, sail):
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
     asun = (-mu/(np.linalg.norm(r)**3)) * r
-    theta = math.atan2(r[1], r[0])
-    asail = (beta * mu / np.dot(r, r) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
+
+    # following calcs will be done in 2d via the transformation matrix
+    rplanar = np.matmul(sail.initMatrix, r)
+    theta = math.atan2(rplanar[1], rplanar[0])
+    asailplanar = (beta * mu / np.dot(rplanar, rplanar) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
+    asail = np.matmul(sail.invMatrix, asailplanar)
+
     atotal = asun + asail
     return np.append(v, atotal)
 
@@ -143,8 +148,15 @@ def cone_angle_factory(a, t_thresholds):
 # TODO: ngl I think the term trajectory could be a bit confusing since we are 
 # controlling the trajectory of the inputs not the actual path of the spacecraft
 def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
+    
+    #generate the transformation matrix needed
+    er = initLoc / np.linalg.norm(initLoc)
+    ev = initVel / np.linalg.norm(initVel)
+    eb = np.cross(er, ev)
+    initMatrix = [er, ev, eb]
+    
     coneAngle = cone_angle_factory(trajectory[1], trajectory[0])
-    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=True)
+    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions = np.append(initLoc, initVel)
     newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
@@ -242,7 +254,7 @@ def animatebodies(bodies, tstep=1):
     numframes = int(duration/tstep)
 
     ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
-    ani.save('solarsystem.gif')
+    #ani.save('solarsystem.gif')
     plt.show()
 
 '''

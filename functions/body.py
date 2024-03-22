@@ -88,7 +88,7 @@ class SolarSail(SatelliteBody):
 
     #includes the angles of the solar sail in order to determine solar sail acceleration
     def __init__(self, name, position, velocity, acceleration, yawAngle, 
-                 coneAngle, pitchAngle=0, rollAngle=0, opacity=.5, 
+                 coneAngle, initMatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]), pitchAngle=0, rollAngle=0, opacity=.5, 
                  path_style='past', trail_length=5e2, show_traj=False):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
@@ -99,6 +99,8 @@ class SolarSail(SatelliteBody):
         
         self.coneAngle = coneAngle # function mapping (t,s) -> angle
         self.currStep = 0 # current step in the trajectory
+        self.initMatrix = initMatrix # transformation matrix in order to make sail calculations 2 dimensional [er, ev, eb], eb should be 0
+        self.invMatrix = np.linalg.inv(self.initMatrix) # inv matrix used to convert back into [i, j, k]
 
         super().__init__(name, position, velocity, acceleration, self.mass,
                          opacity, path_style, trail_length, show_traj)
