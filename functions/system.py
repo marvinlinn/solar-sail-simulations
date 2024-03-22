@@ -43,7 +43,7 @@ class SolarSystem(System):
         SUN = body.CelestialBody("sun", '10', self, timeObj, 1.9891E+30, color='yellow')
         MERCURY = body.CelestialBody("mercury", '1', self, timeObj, 3.285E+23, color='grey')
         VENUS = body.CelestialBody("venus", '2', self, timeObj, 4.867E+24, color='orange')
-        EARTH = body.CelestialBody("earth", '3', self, timeObj, 5.97219E+24, color='green')
+        EARTH = body.CelestialBody("earth", '3', self, timeObj, 5.97219E+24, color='blue')
         MARS = body.CelestialBody("mars", '4', self, timeObj, 6.42E+23, color='red')
         '''
         JUPITER = body.CelestialBody("jupiter", '5', self, timeObj, 1.898E+27, color='tan')

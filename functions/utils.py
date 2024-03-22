@@ -222,7 +222,7 @@ def animatebodies(bodies, tstep=1):
         data = b.locations
         if isinstance(b, body.CelestialBody):
             ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], 
-                      label=b.name, alpha=b.opacity, marker=b.marker, markersize=b.dispSize)
+                      label=b.name, alpha=b.opacity, marker=b.marker, markersize=b.dispSize, color=b.color)
         else:
             ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], alpha=b.opacity, marker=b.marker, markersize=b.dispSize)
         if b.show_traj:

@@ -58,15 +58,13 @@ for n in range(1000):
 utils.animatebodies(sailset, 50)
 """
 
-'''
-Deliverable 
-
+# Deliverable
 # 6 different points varied between 0.6, 0, -0.6
-testTime = spice.Time(1, 1, 2000, 720) # 2 years
+testTime = spice.Time(1, 1, 2000, 360) # 2 years
 timeSeconds = testTime.lengthSeconds
 
 #planet generation
-sys = system.SolarSystem("720 day sys", testTime)
+sys = system.SolarSystem("360 day sys", testTime)
 sysbds = sys.bodies
 numSteps = len(sysbds[0].locations[0])
 
@@ -95,19 +93,18 @@ for n in range(len(trajs)):
                                   np.array([timeInt, trajs[n]]), [0, timeSeconds], numSteps)
     sailset = np.append(sailset, newSail)  
 
-utils.animatebodies(sailset, 50)
-
+utils.animatebodies(np.append(sailset, sysbds), 5)
 #utils.animatebodies(sysbds)                        
 print(np.linalg.norm(initPos))
 
 print(initPos)
 print(initVelVec)
-'''
+
 
 '''
 less iterations hopefully less messy
 '''
-
+'''
 # 6 different points varied between 0.6, 0, -0.6
 testTime = spice.Time(1, 1, 2000, 720) # 2 years
 timeSeconds = testTime.lengthSeconds
@@ -144,7 +141,7 @@ utils.animatebodies(np.append(sailset, sysbds), 10)
 print(sysbds[0])
 print(isinstance(sysbds[0], body.CelestialBody))
 print(isinstance(sailset[0], body.CelestialBody))
-
+'''
 '''
 testing below
 
