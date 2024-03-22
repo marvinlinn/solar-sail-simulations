@@ -220,22 +220,25 @@ def animatebodies(bodies, tstep=1):
 
     for b in bodies:
         data = b.locations
-        ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], 
-                      label=b.name, alpha=b.opacity)
+        if isinstance(b, body.CelestialBody):
+            ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], 
+                      label=b.name, alpha=b.opacity, marker=b.marker, markersize=b.dispSize)
+        else:
+            ln, = ax.plot(data[0, 0:1], data[1, 0:1], data[2, 0:1], alpha=b.opacity, marker=b.marker, markersize=b.dispSize)
         if b.show_traj:
             ax.plot(data[0,:], data[1,:], data[2,:], alpha=traj_opacity, color='black')
         lines = np.append(lines, np.array([ln]))
     
     def update(frame, bodies, lines): # lines and bodies in the same order
-        for n, body in enumerate(bodies):
+        for n, b in enumerate(bodies):
             ln = lines[n]
-            data = body.locations
-            if body.path_style == 'past':
+            data = b.locations
+            if b.path_style == 'past':
                 ln.set_data(data[:2, :int(frame*tstep)])
                 ln.set_3d_properties(data[2, :int(frame*tstep)])
-            elif body.path_style == 'trail':
+            elif b.path_style == 'trail':
                 front = int(frame*tstep)
-                back = int(max(0, front - body.trail_length))
+                back = int(max(0, front - b.trail_length))
                 ln.set_data(data[:2, back:front])
                 ln.set_3d_properties(data[2, back:front])
 
@@ -254,7 +257,7 @@ def animatebodies(bodies, tstep=1):
     numframes = int(duration/tstep)
 
     ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
-    #ani.save('solarsystem.gif')
+    ani.save('solarsystem.gif')
     plt.show()
 
 '''

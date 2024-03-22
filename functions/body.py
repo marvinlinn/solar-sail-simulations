@@ -12,7 +12,7 @@ import functions.utils as utils
 
 class Body:
     def __init__(self, name, position, velocity, acceleration, mass, opacity=1, 
-                 path_style='past', trail_length=5e3, show_traj=False):
+                 path_style='past', trail_length=5e3, show_traj=False, marker=',', dispSize=1):
         self.name = name
         self.position = position
         self.velocity = velocity
@@ -25,16 +25,22 @@ class Body:
         self.path_style = path_style
         self.trail_length = trail_length
         self.show_traj = show_traj
+        self.marker = marker
+        self.dispSize = dispSize
 
 class CelestialBody(Body):
     min_display_size = 10
     display_log_base = 10
     def __init__(self, name, spkid, system, timeObj, mass, color='black', 
-                 acceleration=None, opacity=1, path_style='past', 
-                 trail_length=5e3, show_traj=False):
+                 acceleration=None, opacity=1, path_style='trail', 
+                 trail_length=1, show_traj=False, marker='o', dispSize = 8):
         self.spkid = spkid
         self.system = system
+        
         self.color = color
+        self.marker = marker
+        self.dispSize = dispSize
+
         self.mass = mass
         self.timeStep = 5 #in hours
         position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
@@ -44,7 +50,7 @@ class CelestialBody(Body):
         )
         self.system.add_body(self)
         super().__init__(name, position, velocity, acceleration, mass,
-                         opacity, path_style, trail_length, show_traj)
+                         opacity, path_style, trail_length, show_traj, marker=marker, dispSize=dispSize)
         self.locations = position
 
     def getPositon(self, currStep):
@@ -59,13 +65,22 @@ class CelestialBody(Body):
             markersize=self.display_size,
             color=self.color
         )
+    def draw(self, currStep, ax):
+        ax.plot(
+            self.locations[0][currStep],
+            self.locations[1][currStep],
+            self.locations[2][currStep],
+            marker="o",
+            markersize=self.display_size,
+            color=self.color
+        )
 
 class SatelliteBody(Body):
 
     def __init__(self, name, position, velocity, acceleration, mass, opacity=1, 
-                 path_style='past', trail_length=5e3, show_traj=False):
+                 path_style='past', trail_length=5e3, show_traj=False, marker=',', dispSize=1):
         super().__init__(name, position, velocity, acceleration, mass,
-                         opacity, path_style, trail_length, show_traj)
+                         opacity, path_style, trail_length, show_traj, marker=marker, dispSize=dispSize)
 
     # Increments the simulation by the designated timestep
     def propagate(self, timestep):
@@ -89,7 +104,7 @@ class SolarSail(SatelliteBody):
     #includes the angles of the solar sail in order to determine solar sail acceleration
     def __init__(self, name, position, velocity, acceleration, yawAngle, 
                  coneAngle, initMatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]), pitchAngle=0, rollAngle=0, opacity=.5, 
-                 path_style='past', trail_length=5e2, show_traj=False):
+                 path_style='past', trail_length=75, show_traj=False, marker=',', dispSize=1):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         
@@ -102,8 +117,11 @@ class SolarSail(SatelliteBody):
         self.initMatrix = initMatrix # transformation matrix in order to make sail calculations 2 dimensional [er, ev, eb], eb should be 0
         self.invMatrix = np.linalg.inv(self.initMatrix) # inv matrix used to convert back into [i, j, k]
 
+        self.marker = marker
+        self.dispSize = dispSize
+
         super().__init__(name, position, velocity, acceleration, self.mass,
-                         opacity, path_style, trail_length, show_traj)
+                         opacity, path_style, trail_length, show_traj, marker=marker, dispSize=dispSize)
     
     def propagate(self, timestep, currstep, planetarysys):
         self.determineSolarAccel(currstep, planetarysys, coneAngle)

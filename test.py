@@ -141,6 +141,10 @@ for n in range(len(trajs)):
 
 utils.animatebodies(np.append(sailset, sysbds), 10)
 
+print(sysbds[0])
+print(isinstance(sysbds[0], body.CelestialBody))
+print(isinstance(sailset[0], body.CelestialBody))
+
 '''
 testing below
 
