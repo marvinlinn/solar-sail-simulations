@@ -33,7 +33,7 @@ class CelestialBody(Body):
     display_log_base = 10
     def __init__(self, name, spkid, system, timeObj, mass, color='black', 
                  acceleration=None, opacity=1, path_style='trail', 
-                 trail_length=1, show_traj=False, marker='o', dispSize = 6):
+                 trail_length=1, show_traj=True, marker='o', dispSize = 6):
         self.spkid = spkid
         self.system = system
         
