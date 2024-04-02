@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import scipy.integrate as integ
 import stateCollection.spiceInterface as spice
 
+spice.furnsh('./data/20000001.bsp')
+
 #solar_system = system.SolarSystem("solar")
 #solar_system.animateBodies()
 AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth

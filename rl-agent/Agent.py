@@ -4,7 +4,7 @@ import tensorflow as tf
 from rich.progress import track
 
 class Agent:
-    def __init__(self, world, policy, Q, learning_rate_policy=0.00001, learning_rate_Q=0.0001, decay_rate=0.9):
+    def __init__(self, world, policy, Q, learning_rate_policy=0.00001, learning_rate_Q=0.0005, decay_rate=0.9):
         self.world = world
         self.policy = policy
         self.Q = Q
@@ -26,7 +26,7 @@ class Agent:
             print(f'epoch {epoch}: Mean Reward = {r_mean}')
 
     def training_step(self, max_cycle):
-        expand_policy = lambda t: (t[0], t[1], t[1].numpy()[0][0])
+        expand_policy = lambda t: (t[0], t[1], t[2].numpy()[0][0])
         apply_policy = lambda x: expand_policy(self.policy(np.expand_dims(x, axis=0)))
         expand_Q = lambda t: (t, t.numpy()[0][0])
         apply_Q = lambda x: expand_Q(self.Q(np.expand_dims(x, axis=0)))
@@ -35,7 +35,7 @@ class Agent:
         s = self.world.reset()
         with tf.GradientTape() as policy_tape:
             dist, a, a_raw = apply_policy(s)
-            loss_a = -tf.reduce_mean(dist.log_prob(a))
+            log_prob = tf.reduce_mean(dist.log_prob(a))
 
         
         for t in range(max_cycle):
@@ -46,14 +46,14 @@ class Agent:
             # sample next action from policy
             with tf.GradientTape() as policy_tape_next:
                 dist_next, a_next, a_next_raw = apply_policy(s)
-                loss_a_next = -tf.reduce_mean(dist.log_prob(a_next))
+                log_prob_next = tf.reduce_mean(dist.log_prob(a_next))
             # get Q(s,a)
             sa = np.append(s,a)
             with tf.GradientTape() as Q_tape:
                 Q_sa, Q_sa_raw = apply_Q(sa)
 
             # update policy parameters theta += alpha * Q(s,a) * grad log pi(a|s)
-            policy_grads = policy_tape.gradient(loss_a, self.policy.trainable_variables)
+            policy_grads = policy_tape.gradient(log_prob, self.policy.trainable_variables)
             policy_update = [self.learning_rate_policy * Q_sa_raw * grad for grad in policy_grads]
             self.p_optimizer.apply_gradients(zip(policy_update, self.policy.trainable_variables))
 
@@ -68,7 +68,7 @@ class Agent:
             self.q_optimizer.apply_gradients(zip(Q_update, self.Q.trainable_variables))
 
             # advance s and a
-            a, a_raw, loss_a = a_next, a_next_raw, loss_a_next
+            a, a_raw, log_prob = a_next, a_next_raw, log_prob_next
             dist = dist_next
             s = s_next
             policy_tape = policy_tape_next
