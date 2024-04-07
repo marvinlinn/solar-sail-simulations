@@ -3,8 +3,11 @@ import numpy as np
 import tensorflow as tf
 from rich.progress import track
 
-class Agent:
-    def __init__(self, world, policy, Q, learning_rate_policy=0.00001, learning_rate_Q=0.0005, decay_rate=0.9):
+
+class AsyncAgent(Agent):
+
+    def __init__(self, world, policy, Q, learning_rate_policy=0.00001, 
+                 learning_rate_Q=0.0005, decay_rate=0.9):
         self.world = world
         self.policy = policy
         self.Q = Q
@@ -16,16 +19,30 @@ class Agent:
         self.p_optimizer = tf.keras.optimizers.Adam()
         self.q_optimizer = tf.keras.optimizers.Adam()
 
-    def train(self, max_cycle, cycles_per_epoch, epochs):
+    def train(self, max_duration, episodes_per_epoch, epochs):
+        pass
+
+    def training_step(self, max_duration):
+        pass
+
+
+class SyncAgent(Agent):
+
+    def __init__(self, world, policy, Q, learning_rate_policy=0.00001, 
+                 learning_rate_Q=0.0005, decay_rate=0.9):
+        super().__init__(world, policy, Q, learning_rate_policy, 
+                         learning_rate_Q, decay_rate)
+
+    def train(self, max_duration, episodes_per_epoch, epochs):
         r_mean = 0
-        for epoch in range(cycles_per_epoch):
+        for epoch in range(episodes_per_epoch):
             c_prev = -1
-            for cycle in track(range(cycles_per_epoch), description=f'Epoch {epoch}'):
-                r_mean = self.training_step(max_cycle)
+            for cycle in track(range(episodes_per_epoch), description=f'Epoch {epoch}'):
+                r_mean = self.training_step(max_duration)
                 c_prev = cycle
             print(f'epoch {epoch}: Mean Reward = {r_mean}')
 
-    def training_step(self, max_cycle):
+    def training_step(self, max_duration):
         expand_policy = lambda t: (t[0], t[1], t[2].numpy()[0][0])
         apply_policy = lambda x: expand_policy(self.policy(np.expand_dims(x, axis=0)))
         expand_Q = lambda t: (t, t.numpy()[0][0])
@@ -38,9 +55,9 @@ class Agent:
             log_prob = tf.reduce_mean(dist.log_prob(a))
 
         
-        for t in range(max_cycle):
+        for t in range(max_duration):
             # sample reward and get next state
-            r, s_next = self.world.advance_simulation(a)
+            r, s_next = self.world.advance_simulation(a_raw)
             r_total += r
 
             # sample next action from policy
@@ -73,4 +90,46 @@ class Agent:
             s = s_next
             policy_tape = policy_tape_next
 
-        return r_total/max_cycle
+        return r_total/max_duration
+
+class AsyncAgent(Agent):
+
+    def __init__(self, world, policy, Q, learning_rate_policy=0.00001, 
+                 learning_rate_Q=0.0005, decay_rate=0.9):
+        super().__init__(world, policy, Q, learning_rate_policy, 
+                         learning_rate_Q, decay_rate)
+
+    def train(self, max_duration, episodes_per_epoch, epochs):
+        pass
+
+    def _sarList(self, max_duration):
+        states = []
+        actions = []
+        rewards = []
+
+        apply_policy = lambda x: self.policy(np.expand_dims(x, axis=0))[1]
+        
+        s = self.world.reset()
+        states.append(s)
+
+        a = apply_policy(s)
+        actions.append(a)
+        
+        for t in range(max_duration):
+            states.append(s)
+            actions.append(a)
+
+            # sample reward and get next state
+            r, s_next = self.world.advance_simulation(a)
+
+            # sample next action from policy
+            a_next = apply_policy(s)
+
+            # advance s and a
+            a = a_next
+            s = s_next
+            policy_tape = policy_tape_next
+
+        states.append(s)
+
+        return states, actions, rewards
