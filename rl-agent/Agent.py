@@ -1,8 +1,9 @@
 import World
 import numpy as np
 import tensorflow as tf
-from rich.progress import track
 
+from rich.progress import track
+import multiprocessing
 
 class AsyncAgent(Agent):
 
@@ -100,7 +101,15 @@ class AsyncAgent(Agent):
                          learning_rate_Q, decay_rate)
 
     def train(self, max_duration, episodes_per_epoch, epochs):
-        pass
+        available_threads = multiprocessing.cpu_count()
+        proc_count = min(available_threads, episodes_per_epoch)
+        with multiprocessing.Pool(proc_count) as pool:
+            episodes_async = [pool.apply_async(sef._sarList, (max_duration,)) for _ in range(episodes_per_epoch)]
+        # for each batch
+        # compute Q(s,a) for batch
+        # update policy params
+        # compute td error for batch
+        # update Q function
 
     def _sarList(self, max_duration):
         states = []
