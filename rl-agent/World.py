@@ -45,26 +45,51 @@ class TrackNEO(World):
 class ParallelTestWorld(ParallelWorld):
     
     def __init__(self):
+        self.num_bodies = 4
+        self.num_sails = 100
+        self.ms = 1.5 # sail mass
+        self.dt = 1
+
         self.reset()
 
     def reset(self):
-        self.s = np.zeros(12)
-        return self.s
+        self.t = 0
+
+        self.body_pos = numpy.random.random((1, self.num_bodies, 3))
+        self.mb = np.random.random(self.num_bodies) # body masses
+
+        self.P = np.random.random((self.num_sails, 3)) # position
+        self.V = np.zeros((self.num_sails, 3)) # velocity
+        self.Pt = np.random.random((self.num_sails, 3)) # target pos
+        self.Vt = np.zeros((self.num_sails, 3)) # target velocity
+
+        return self._get_state()
+
+    def _get_state(self):
+        return np.hstack(self.P, self.V, self.Pt, self.Vt)
+
+    def _update_body_pos(self, t):
+        pass
 
     def advance_simulation(self, A):
-        num_bodies = 4
-        num_sails = 100
-        ms = 1.5 # sail mass
+        self._update_body_pos(self.t)
+        sail_pos = self.P.reshape((num_sails, 1, 3))
 
-        body_pos = np.random.random((1,3, num_bodies))
-        mb = np.random.random(num_bodies) # body masses
-        sail_pos = np.random((num_sails, 3, 1))
+        r = self.body_pos - sail_pos
+        r2 = np.sum(r*r, axis=2)
+        r2rep = np.reciprocal(r2)
 
-        r = body_pos - sail_pos
-        r2rep = np.reciprocal(np.sum(r*r, axis=1))
-        
-        Fg = (G * ms * mb * r2rep) 
-        pass
+        nFg = (G * ms * mb * r2rep) # ||F_g||
+        Fg = nFg.reshape(num_sails, num_bodies, 1) * r # F_g
+        F_total = Fg.sum(axis=1)
+
+        self.P += 0.5*self.dt**2/self.ms * F_total + self.dt * self.V
+        self.V += F_total/self.ms * self.dt
+
+        rewards = np.linalg.norm(self.body_pos - self.P.reshape((num_sails, 1, 3))) - \
+                np.linalg.norm(r, axis=2) + r2rep # TODO: sketchy reward funct
+
+        return rewards, self._get_state()
 
 class SimpleTestWorld(World):
 
