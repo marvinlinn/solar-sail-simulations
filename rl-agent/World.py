@@ -1,4 +1,3 @@
-import math
 
 class World:
     # state s := (x, y, z, vx, vy, vz, 
@@ -15,6 +14,22 @@ class World:
         # return reward and next state (r, s)
         pass
 
+class ParallelWorld:
+    # states S in R^{num_sails x 12}:= (x, y, z, vx, vy, vz, 
+    #             x_target, y_target, z_target, vx_target, vy_target, vz_target)
+
+    def __init__(self):
+        pass
+
+    def reset(self):
+        # return initial states S
+        pass
+
+    def advance_simulation(self, A):
+        # return reward and next state (R, S)
+        pass
+
+
 class TrackNEO(World):
 
     def __init__(self):
@@ -24,6 +39,31 @@ class TrackNEO(World):
         pass
 
     def advance_simulation(self, a):
+        pass
+
+
+class ParallelTestWorld(ParallelWorld):
+    
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.s = np.zeros(12)
+        return self.s
+
+    def advance_simulation(self, A):
+        num_bodies = 4
+        num_sails = 100
+        ms = 1.5 # sail mass
+
+        body_pos = np.random.random((1,3, num_bodies))
+        mb = np.random.random(num_bodies) # body masses
+        sail_pos = np.random((num_sails, 3, 1))
+
+        r = body_pos - sail_pos
+        r2rep = np.reciprocal(np.sum(r*r, axis=1))
+        
+        Fg = (G * ms * mb * r2rep) 
         pass
 
 class SimpleTestWorld(World):
