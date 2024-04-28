@@ -108,7 +108,7 @@ beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
 # current system in place for sail calculations
 def npSailODE(t, s, sail):
-    coneAngle = sail.coneAngle(t, s)
+    coneAngle = sail.coneAngle(t, s) #coneAngle is going to be a tuple with a "yaw" and "pitch" component
     #print(f'cone: {coneAngle}')
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
@@ -117,15 +117,17 @@ def npSailODE(t, s, sail):
     # following calcs will be done in 2d via the transformation matrix
     rplanar = np.matmul(sail.initMatrix, r)
     theta = math.atan2(rplanar[1], rplanar[0])
-    asailplanar = (beta * mu / np.dot(rplanar, rplanar) * np.cos(coneAngle) ** 2) * np.array([np.cos(theta+coneAngle), np.sin(theta+coneAngle), 0])
+    asailMag = (beta * mu / np.dot(rplanar, rplanar) * (np.cos(coneAngle[0]) ** 2) * (np.cos(coneAngle[1]) ** 2))
+    asailNorm = np.array([np.cos(coneAngle[1])*np.cos(coneAngle[0]+theta), np.cos(coneAngle[1])*np.sin(coneAngle[0]+theta), np.sin(coneAngle[1])])
+    asailplanar = asailMag * asailNorm
     asail = np.matmul(sail.invMatrix, asailplanar)
 
     atotal = asun + asail
     return np.append(v, atotal)
 
 # sail cone angle function factory
-def cone_angle_factory(a, t_thresholds):
-    instr_count = len(a)
+def cone_angle_factory(t_thresholds, yaws, pitches):
+    instr_count = len(yaws)
     i_prev = [0]
 
     assert len(t_thresholds) == instr_count, \
@@ -140,7 +142,7 @@ def cone_angle_factory(a, t_thresholds):
                 if t < t_thresholds[i]:
                     break
             i_prev[0] = i
-        return a[i]
+        return (yaws[i], pitches[i])
 
     return cone_angle
 
@@ -155,7 +157,7 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
     eb = np.cross(er, ev)
     initMatrix = [er, ev, eb]
     
-    coneAngle = cone_angle_factory(trajectory[1], trajectory[0])
+    coneAngle = cone_angle_factory(trajectory[0], trajectory[1], trajectory[2])
     newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions = np.append(initLoc, initVel)

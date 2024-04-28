@@ -69,7 +69,9 @@ sysbds = sys.bodies
 numSteps = len(sysbds[0].locations[0])
 
 #trajectories generation
-trajs = np.array([[0,0,0,0,0,0,0]])
+
+yaws = np.array([[0,0,0,0,0,0,0]])
+pitches = np.array([[0.6,0.6,0.6,0.6,0.6,0.6,0.6]])
 possibleOrients = np.array([-0.6,0,0.6])
 timeInt = np.array([0, timeSeconds/6, (2*timeSeconds)/6, (3*timeSeconds)/6, (4*timeSeconds)/6, (5*timeSeconds)/6, timeSeconds])
 
@@ -79,7 +81,8 @@ for a in possibleOrients:
             for d in possibleOrients:
                 for e in possibleOrients:
                     for f in possibleOrients:
-                        trajs = np.append(trajs, [[a,b,c,d,e,f,0]], axis=0)
+                        yaws = np.append(yaws, [[a,b,c,d,e,f,0]], axis=0)
+                        pitches = np.append(pitches, [[0.6,0.6,0.6,0.6,0.6,0.6,0.6]], axis=0)
 
 #sail generation
 #init conditions -> earth position, velocity must also be vectorized correctly
@@ -88,17 +91,21 @@ initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(
 initVel = initVelVec * 30
 sailset = np.array([])
 
-for n in range(len(trajs)):
+for n in range(len(yaws)):
     newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel, 
-                                  np.array([timeInt, trajs[n]]), [0, timeSeconds], numSteps)
+                                  np.array([timeInt, yaws[n], pitches[n]]), [0, timeSeconds], numSteps)
     sailset = np.append(sailset, newSail)  
 
 utils.animatebodies(np.append(sailset, sysbds), 5)
 #utils.animatebodies(sysbds)                        
-print(np.linalg.norm(initPos))
 
-print(initPos)
-print(initVelVec)
+#print(np.linalg.norm(initPos))
+
+a = [(1,2), (3,4), (5,6)]
+print(a[0], a[0][0])
+
+#print(initPos)
+#print(initVelVec)
 
 
 '''

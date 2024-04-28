@@ -124,7 +124,7 @@ class SolarSail(SatelliteBody):
                          opacity, path_style, trail_length, show_traj, marker=marker, dispSize=dispSize)
     
     def propagate(self, timestep, currstep, planetarysys):
-        self.determineSolarAccel(currstep, planetarysys, coneAngle)
+        self.determineSolarAccel(currstep, planetarysys, self.coneAngle)
         super().propagate(timestep)
     
     #currently only considering the yaw Angle
