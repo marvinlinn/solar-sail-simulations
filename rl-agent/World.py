@@ -1,3 +1,5 @@
+import numpy as np
+import stateCollection.spiceInterface as spice
 
 class World:
     # state s := (x, y, z, vx, vy, vz, 
@@ -42,13 +44,22 @@ class TrackNEO(World):
         pass
 
 
-class ParallelTestWorld(ParallelWorld):
-    
+class ParallelTrackNEO(ParallelWorld):
+
+    G = 6.6743E-11 # gravitational constant
+
+    P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
+    mu_sun = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
+    AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
+    beta = 0.15 # ratio of peak solar sail force to sun's gravity
+
     def __init__(self):
         self.num_bodies = 4
         self.num_sails = 100
-        self.ms = 1.5 # sail mass
-        self.dt = 1
+        dt_hours = 24
+        self.dt = 24 * 3600
+
+        self.mu_bodies = np.random.random(self.num_bodies) # body masses
 
         self.reset()
 
@@ -56,7 +67,6 @@ class ParallelTestWorld(ParallelWorld):
         self.t = 0
 
         self.body_pos = numpy.random.random((1, self.num_bodies, 3))
-        self.mb = np.random.random(self.num_bodies) # body masses
 
         self.P = np.random.random((self.num_sails, 3)) # position
         self.V = np.zeros((self.num_sails, 3)) # velocity
@@ -75,19 +85,35 @@ class ParallelTestWorld(ParallelWorld):
         self._update_body_pos(self.t)
         sail_pos = self.P.reshape((num_sails, 1, 3))
 
+        # Compute Gravity Accel
         r = self.body_pos - sail_pos
         r2 = np.sum(r*r, axis=2)
-        r2rep = np.reciprocal(r2)
 
-        nFg = (G * ms * mb * r2rep) # ||F_g||
-        Fg = nFg.reshape(num_sails, num_bodies, 1) * r # F_g
-        F_total = Fg.sum(axis=1)
+        n_accel_g = (self.mu_bodies / r2) # ||a_g|| TODO: check dims
+        accel_g = n_accel_g.reshape(num_sails, num_bodies, 1) * r # F_g
+        accel_g_total = accel_g.sum(axis=1)
 
-        self.P += 0.5*self.dt**2/self.ms * F_total + self.dt * self.V
-        self.V += F_total/self.ms * self.dt
+        # Compute Sail Force
+        # --- # sun_norm = sail_pos / \
+        # --- #         np.linalg.norm(sail_pos, axis=2)[:,np.newaxis]
+        orbit_angle = np.arctan(sun_norm[:,:,1] / sun_norm[:,:,0])
+        total_angle = A + orbit_angle
+        sail_norm = np.hstack((np.cos(total_angle), 
+                               np.sin(total_angle), 
+                               np.zeros((num_sails, 1))))
+        sail_dist2 = np.sum(sail_pos * sail_pos, axis=2)
+        sail_accel = mu_sun * beta / sail_dist2 * np.cos(A) * sail_norm
 
-        rewards = np.linalg.norm(self.body_pos - self.P.reshape((num_sails, 1, 3))) - \
-                np.linalg.norm(r, axis=2) + r2rep # TODO: sketchy reward funct
+        # Update Pos
+        total_accel = accel_g_total + sail_accel
+        self.P += 0.5*self.dt**2 * total_accel + self.dt * self.V
+        self.V += total_accel * self.dt
+
+        # Update time
+        self.t += dt
+
+        # Reward
+        rewards = 1 # TODO: reward funct
 
         return rewards, self._get_state()
 

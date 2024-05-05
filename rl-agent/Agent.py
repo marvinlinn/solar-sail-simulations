@@ -93,7 +93,7 @@ class SyncAgent(Agent):
             # compute TD error
             sa_next = np.append(s_next, a_next)
             Q_sa_next, Q_sa_next_raw = apply_Q(sa_next)
-            td_error = r * self.decay_rate * Q_sa_next_raw - Q_sa_raw
+            td_error = r + self.decay_rate * Q_sa_next_raw - Q_sa_raw
 
             # update weights of Q: w += alpha * delta * grad Q(s,a)
             Q_grads = Q_tape.gradient(Q_sa, self.Q.trainable_variables)
@@ -108,6 +108,78 @@ class SyncAgent(Agent):
 
         print(f'mean: {r_total/max_duration}, r: {r_total}, md: {max_duration}')
         return r_total/max_duration, states
+
+class ParallelAgent(Agent):
+
+    def __init__(self, world, policy, Q, learning_rate_policy=0.00001,
+                 learning_rate_Q=0.0005, decay_rate=0.9):
+        super().__init__(world, policy, Q, learning_rate_policy, 
+                         learning_rate_Q, decay_rate)
+
+    def train(self, max_duration, episodes_per_epoch, epochs):
+        pass
+
+    def training_step(self, max_duration):
+        R_total = np.zeros(self.world.num_sails)
+        S = self.world.reset()
+
+        with tf.GradientTape() as policy_tape:
+            mu, sigma = self.policy(s)
+            normal = tfp.distributions.normal(mu, sigma)
+            A = normal.sample()
+            log_prob = normal.log_prob(A)
+
+        # get Q(s,a)
+        SA = np.hstack(S, A)
+        with tf.GradientTape() as Q_tape:
+            Q_SA = self.Q(SA)
+
+        
+        for t in range(max_duration):
+            # sample reward and get next state
+            R, S_next = self.world.advance_simulation(a_raw)
+            R_total += R
+
+            # sample next action from policy
+            with tf.GradientTape() as policy_tape_next:
+                dist_next, a_next, a_next_raw = self._apply_policy(s)
+                mu, sigma = self._apply_policy(s)
+                normal = tfp.distributions.Normal(mu, sigma)
+                A_next = normal.sample()
+                log_prob_next = dist.log_prob(A_next)
+
+            # update policy parameters theta += alpha * Q(s,a) * grad log pi(a|s)
+            with policy_tape:
+                policy_grad_target = self.learning_rate_policy * Q_SA * log_prob
+            policy_grads = policy_tape.gradient(policy_grad_target, 
+                                                self.policy.trainable_variables)
+            self.p_optimizer.apply_gradients(zip(policy_grads, 
+                                                 self.policy.trainable_variables))
+
+            # compute TD error
+            SA_next = np.hstack(A_next, A_next)
+            with tf.GradientTape() as Q_tape_next:
+                Q_SA_next = self.Q(SA_next)
+            td_error = R + self.decay_rate * Q_SA_next - Q_SA
+            with Q_tape:
+                Q_grad_target = self.learning_rate_Q * td_error.numpy() * Q_SA # TODO: confirm td error not differentiated
+            Q_grads = Q_tape.gradient(Q_SA, self.Q.trainable_variables)
+
+            # update weights of Q: w += alpha * delta * grad Q(s,a)
+            self.q_optimizer.apply_gradients(zip(Q_grads, 
+                                                 self.Q.trainable_variables))
+
+            # advance s and a TODO: confirm all vars prop correctly
+            # a, a_raw, log_prob = a_next, a_next_raw, log_prob_next
+            A, log_prob = A_next, log_prob_next
+            S = S_next
+            policy_tape = policy_tape_next
+            Q_SA = Q_SA_next
+            Q_tape = Q_tape_next
+
+        print(f'mean: {r_total/max_duration}, r: {r_total}, md: {max_duration}')
+        return r_total/max_duration, states
+        
 
 class AsyncAgent(Agent):
 
