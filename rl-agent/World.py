@@ -52,21 +52,53 @@ class ParallelTrackNEO(ParallelWorld):
     mu_sun = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
     AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
     beta = 0.15 # ratio of peak solar sail force to sun's gravity
+    # Bodies:
+    # [ Sun:     mu = 1.327124400189e20 / 1e9,
+    #   Mercury: mu = 2.20329e13        / 1e9,
+    #   Venus:   mu = 3.248599e14       / 1e9,
+    #   Earth:   mu = 3.9860044188e14   / 1e9,
+    #   Mars:    mu = 4.2828372e13      / 1e9,
+    #   Jupiter: mu = 1.266865349e17    / 1e9,
+    #   Saturn:  mu = 3.79311879e16     / 1e9,
+    #   Uranus:  mu = 5.7939399e15      / 1e9,
+    #   Neptune: mu = 6.8365299e15      / 1e9 ]
 
     def __init__(self):
         self.num_bodies = 4
         self.num_sails = 100
         dt_hours = 24
-        self.dt = 24 * 3600
+        self.dt = dt_hours * 3600
 
-        self.mu_bodies = np.random.random(self.num_bodies) # body masses
+        self.bodies = {}
+        self.bodies['name'] = np.array(['Sun', 'Mercury', 'Venus', 'Earth', 
+                                        'Mars', 'Jupiter', 'Saturn', 'Uranus',
+                                        'Neptune'])
+        self.bodies['spkid'] = np.array(['10', '1', '2', '3', '4', '5', '6', 
+                                         '7', '8', '9'])
+        self.bodies['mu'] = np.array([1.327124400189e20 / 1e9,
+                                      2.20329e13        / 1e9,
+                                      3.248599e14       / 1e9,
+                                      3.9860044188e14   / 1e9,
+                                      4.2828372e13      / 1e9,
+                                      1.266865349e17    / 1e9,
+                                      3.79311879e16     / 1e9,
+                                      5.7939399e15      / 1e9,
+                                      6.8365299e15      / 1e9])
+
+        timeObj = spice.Time(1, 1, 2000, 1000)
+        self.bodies['positions'] = \
+                np.array([spice.requestData(spkid, timeObj, dt_hours)[0].T 
+                          for spkid in self.bodies['spkid']])
+
+        self.bodies['positions'] = np.transpose(self.bodies['positions'], 
+                                                axes=(1,0,2))
 
         self.reset()
 
     def reset(self):
-        self.t = 0
+        self.t = 0 # Index of time. Actual time = self.dt * self.t
 
-        self.body_pos = numpy.random.random((1, self.num_bodies, 3))
+        self.body_pos = self.bodies['positions'][t:t+1]
 
         self.P = np.random.random((self.num_sails, 3)) # position
         self.V = np.zeros((self.num_sails, 3)) # velocity
@@ -79,7 +111,9 @@ class ParallelTrackNEO(ParallelWorld):
         return np.hstack(self.P, self.V, self.Pt, self.Vt)
 
     def _update_body_pos(self, t):
-        pass
+        assert t < len(self.bodies['positions']), \
+               'simulation time exceeds loaded dataset'
+        self.body_pos = self.bodies['positions'][t:t+1]
 
     def advance_simulation(self, A):
         self._update_body_pos(self.t)
@@ -89,7 +123,7 @@ class ParallelTrackNEO(ParallelWorld):
         r = self.body_pos - sail_pos
         r2 = np.sum(r*r, axis=2)
 
-        n_accel_g = (self.mu_bodies / r2) # ||a_g|| TODO: check dims
+        n_accel_g = (self.bodies['mu'] / r2) # ||a_g|| TODO: check dims
         accel_g = n_accel_g.reshape(num_sails, num_bodies, 1) * r # F_g
         accel_g_total = accel_g.sum(axis=1)
 
@@ -110,7 +144,7 @@ class ParallelTrackNEO(ParallelWorld):
         self.V += total_accel * self.dt
 
         # Update time
-        self.t += dt
+        self.t += 1
 
         # Reward
         rewards = 1 # TODO: reward funct
