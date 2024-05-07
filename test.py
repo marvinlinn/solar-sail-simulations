@@ -1,3 +1,4 @@
+from time import time
 import stateCollection.horizonAPI as horizon
 import functions.system as system
 import functions.body as body
@@ -91,10 +92,12 @@ initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(
 initVel = initVelVec * 30
 sailset = np.array([])
 
+start = time()
 for n in range(len(yaws)):
     newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel, 
                                   np.array([timeInt, yaws[n], pitches[n]]), [0, timeSeconds], numSteps)
     sailset = np.append(sailset, newSail)  
+print(f'{len(yaws)} sail sim takes {time() - start} seconds')
 
 utils.animatebodies(np.append(sailset, sysbds), 5)
 #utils.animatebodies(sysbds)                        
