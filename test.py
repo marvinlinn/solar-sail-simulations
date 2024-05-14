@@ -59,7 +59,9 @@ for n in range(1000):
 utils.animatebodies(sailset, 50)
 """
 
-# Deliverable
+# Deliverable (large scale)
+
+'''
 # 6 different points varied between 0.6, 0, -0.6
 testTime = spice.Time(1, 1, 2000, 360) # 2 years
 timeSeconds = testTime.lengthSeconds
@@ -109,7 +111,52 @@ print(a[0], a[0][0])
 
 #print(initPos)
 #print(initVelVec)
+'''
 
+#Small (light) test
+
+
+testTime = spice.Time(1, 1, 2000, 360) # 2 years
+timeSeconds = testTime.lengthSeconds
+
+
+#planet generation
+sys = system.SolarSystem("360 day sys", testTime)
+sysbds = sys.bodies
+numSteps = len(sysbds[0].locations[0])
+
+
+#trajectories generation
+
+
+pitches = np.array([[0,0,0,0]])
+yaws = np.array([[0,0,0,0]])
+possibleOrients = np.array([-0.6,0,0.6])
+timeInt = np.array([0, timeSeconds/3, (2*timeSeconds)/3, timeSeconds])
+
+
+for a in possibleOrients:
+    for b in possibleOrients:
+        for c in possibleOrients:
+            pitches = np.append(pitches, [[a,b,c,0]], axis=0)
+            yaws = np.append(yaws, [[0.6,0.6,0.6,0.6]], axis=0)
+
+
+#sail generation
+#init conditions -> earth position, velocity must also be vectorized correctly
+initPos = sysbds[3].locations.T[0]
+initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(sysbds[3].locations.T[1]-sysbds[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
+initVel = initVelVec * 30
+sailset = np.array([])
+
+
+for n in range(len(yaws)):
+    newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel,
+                                  np.array([timeInt, yaws[n], pitches[n]]), [0, timeSeconds], numSteps)
+    sailset = np.append(sailset, newSail)  
+
+
+utils.animatebodies(np.append(sailset, sysbds), 5)
 
 '''
 less iterations hopefully less messy

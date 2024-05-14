@@ -117,8 +117,9 @@ def npSailODE(t, s, sail):
     # following calcs will be done in 2d via the transformation matrix
     rplanar = np.matmul(sail.initMatrix, r)
     theta = math.atan2(rplanar[1], rplanar[0])
+    phi = math.atan2(rplanar[2], np.sqrt(rplanar[1]**2 + rplanar[0]**2))
     asailMag = (beta * mu / np.dot(rplanar, rplanar) * (np.cos(coneAngle[0]) ** 2) * (np.cos(coneAngle[1]) ** 2))
-    asailNorm = np.array([np.cos(coneAngle[1])*np.cos(coneAngle[0]+theta), np.cos(coneAngle[1])*np.sin(coneAngle[0]+theta), np.sin(coneAngle[1])])
+    asailNorm = np.array([np.cos(coneAngle[1] + phi)*np.cos(coneAngle[0] + theta), np.cos(coneAngle[1] + phi)*np.sin(coneAngle[0]+theta), np.sin(coneAngle[1] + phi)])
     asailplanar = asailMag * asailNorm
     asail = np.matmul(sail.invMatrix, asailplanar)
 
