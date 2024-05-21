@@ -8,6 +8,8 @@ Before running this notebook, please install `conda` as a python environment man
 
 To get the appropriate packages to run this notebook started, please first install a new conda environment through the configuration YAML in the repository. Use the following command while in the repository directory:
 
+$$ \sum a^2 $$
+
 ```
 conda env create -f environment.yml
 ```
