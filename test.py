@@ -114,14 +114,14 @@ print(a[0], a[0][0])
 '''
 
 #Small (light) test
+'''
 
-
-testTime = spice.Time(1, 1, 2000, 360) # 2 years
+testTime = spice.Time(1, 1, 2000, 360) # 1 years
 timeSeconds = testTime.lengthSeconds
 
 
 #planet generation
-sys = system.SolarSystem("360 day sys", testTime)
+sys = system.SolarSystem((testTime.length, "day sys"), testTime)
 sysbds = sys.bodies
 numSteps = len(sysbds[0].locations[0])
 
@@ -157,6 +157,7 @@ for n in range(len(yaws)):
 
 
 utils.animatebodies(np.append(sailset, sysbds), 5)
+'''
 
 '''
 less iterations hopefully less messy
@@ -199,6 +200,11 @@ print(sysbds[0])
 print(isinstance(sysbds[0], body.CelestialBody))
 print(isinstance(sailset[0], body.CelestialBody))
 '''
+timetest = spice.Time(1, 1, 2000, 360)
+simset = utils.packaged2DSim(timetest, [-0.6, 0, 0.6], 3)
+utils.animatebodies(simset, 10)
+
+
 '''
 testing below
 
