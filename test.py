@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integ
 import stateCollection.spiceInterface as spice
+import pretrainingfns as pretrain
 
 #solar_system = system.SolarSystem("solar")
 #solar_system.animateBodies()
@@ -201,7 +202,7 @@ print(isinstance(sysbds[0], body.CelestialBody))
 print(isinstance(sailset[0], body.CelestialBody))
 '''
 timetest = spice.Time(1, 1, 2000, 360)
-simset = utils.packaged2DSim(timetest, [-0.6, 0, 0.6], 3)
+simset = pretrain.packaged2DSim(timetest, [-0.6, 0, 0.6], 3)
 print(simset.shape)
 print(simset[0].yawAngle.shape)
 print(simset[0].timeSteps.shape)
