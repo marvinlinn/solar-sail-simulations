@@ -42,7 +42,7 @@ class CelestialBody(Body):
         self.dispSize = dispSize
 
         self.mass = mass
-        self.timeStep = 5 #in hours
+        self.timeStep = 5 #TODO: Currently 5 hours, maybe want to make it not hard coded
         position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
         self.display_size = max(
             math.log(self.mass, self.display_log_base)/2,

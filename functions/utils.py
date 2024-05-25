@@ -109,7 +109,7 @@ AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
 # current system in place for sail calculations
-def npSailODE(t, s, sail):
+def npSailODE(s, t, sail): # s and t are switched for temporary ODE
     coneAngle = sail.coneAngle(t, s) #coneAngle is going to be a tuple with a "yaw" and "pitch" component
     #print(f'cone: {coneAngle}')
     r = np.array([s[0], s[1], s[2]])
@@ -164,11 +164,16 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
     newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions =np.append(initLoc, initVel)
-    newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
-
-    newSail.timeSteps = newSailLocs.t
-    newSail.locations = newSailLocs.y[:3, :]
+   
+    newSailLocs = integ.odeint(npSailODE, initialconditions, span, args=(newSail,), rtol=1e-8)
+    newSail.timeSteps = span
+    newSail.locations = np.transpose(newSailLocs)[:3,:]
     newSail.yawAngle = np.zeros(len(newSail.timeSteps))
+
+    #newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail], method='RK45')
+    #newSail.timeSteps = newSailLocs.t <- solve ivp
+    #newSail.locations = newSailLocs.y[:3, :] <- solve ivp
+    
     for n in range(len(newSail.timeSteps)): #finds what angle corresponds to what timestep in the integration
         newSail.yawAngle[n] = coneAngle(newSail.timeSteps[n],[0])[0]
     return newSail
@@ -267,7 +272,7 @@ def animatebodies(bodies, tstep=1):
     numframes = int(duration/tstep)
 
     ani = animation.FuncAnimation(fig, update, numframes, fargs=(bodies, lines), interval=100/numframes, blit=False)
-    ani.save('solarsystem.gif')
+    #ani.save('solarsystem.gif')
     plt.show()
 
 '''

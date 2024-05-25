@@ -5,19 +5,23 @@ import csv
 
 #Pretraining Tools
 
-def generateBodyCSV(sailSet, filename="sails_traj_data"):
+#generates a CSV of data which takes in a set of sails, and a target bd.
+def generateBodyCSV(sailSet, targetbd, filename="sails_traj_data"):
     
     f = filename + ".csv"
 
     with open(f, 'w', newline='') as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter='|')
         
         for sail in sailSet:
-            writer.writerow([sail.name, "x coord", "y coord", "z coord", "time", "yaw"])
+            writer.writerow([sail.name + " " + targetbd.name, "sail x", "sail y", "sail z", "time", "yaw", "target x", "target y", "target z", "distance x", "distance y", "distance z", "abs distance"])
             numsteps = len(sail.timeSteps)
             for n in range(numsteps):
-                pos = sail.locations[:3, n]
-                writer.writerow([str(n), pos[0], pos[1], pos[2], sail.timeSteps[n], sail.yawAngle[n]])
+                sailPos = sail.locations[:3, n]
+                targetPos = targetbd.locations[:3, n]
+                distVect = targetPos - sailPos
+                distMag = np.linalg.norm(distVect)
+                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSteps[n], sail.yawAngle[n], targetPos[0], targetPos[1], targetPos[2], distVect[0], distVect[1], distVect[2], distMag])
     return
 
 #for n different sail orientations and m different points to change sail orientation, n^m sails are generated
@@ -29,6 +33,7 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
     sys = system.SolarSystem(sysname, simTime)
     sysbds = sys.bodies
     numSteps = len(sysbds[0].locations[0])
+    print(sysbds[0].locations.shape)
 
 
     #trajectories generation
@@ -37,7 +42,6 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
     timeInt = np.zeros(numsailchanges+1)
     for n in range(numsailchanges+1):
         timeInt[n] = n * timeSeconds
-    print(yaws.shape)
 
     #sail generation
     #init conditions -> earth position, velocity must also be vectorized correctly
@@ -48,8 +52,8 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
 
 
     for n in range(len(yaws)):
-        newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel,
-                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps)#TODO: verify yaws[n] makes sense
+        newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
+                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps)#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
         sailset = np.append(sailset, newSail)
 
     #simset = np.append(sailset, sysbds)
