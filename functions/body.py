@@ -108,7 +108,8 @@ class SolarSail(SatelliteBody):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         
-        self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle
+        self.timeSteps = 0 #PLACEHOLDER steps will be saved as an array in processing
+        self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle, Will be OVERWRITTEN with angles present during timesteps
         self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
         self.rollAngle = rollAngle #degrees, 0 means in the same plane as the orbit of the planets
         

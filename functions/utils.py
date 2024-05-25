@@ -136,7 +136,7 @@ def cone_angle_factory(t_thresholds, yaws, pitches):
     assert len(t_thresholds) == instr_count, \
             'There should be one angle per time threshold'
 
-    def cone_angle(t, s):
+    def cone_angle(t, s): # s kinda unnecessary idk if we still want it in here
         if t < t_thresholds[i_prev[0]] and \
                 (i_prev[0] == 0 or t > t_thresholds[i_prev[0]]):
             i = i_prev
@@ -163,9 +163,14 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
     coneAngle = cone_angle_factory(trajectory[0], trajectory[1], trajectory[2])
     newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
-    initialconditions = np.append(initLoc, initVel)
+    initialconditions =np.append(initLoc, initVel)
     newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail])
+
+    newSail.timeSteps = newSailLocs.t
     newSail.locations = newSailLocs.y[:3, :]
+    newSail.yawAngle = np.zeros(len(newSail.timeSteps))
+    for n in range(len(newSail.timeSteps)):
+        newSail.yawAngle[n] = coneAngle(newSail.timeSteps[n],[0])[0]
     return newSail
 
 #another implementation used for odeint based systems
@@ -282,6 +287,7 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
     timeInt = np.zeros(numsailchanges+1)
     for n in range(numsailchanges+1):
         timeInt[n] = n * timeSeconds
+    print(yaws.shape)
 
     #sail generation
     #init conditions -> earth position, velocity must also be vectorized correctly
@@ -293,7 +299,7 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
 
     for n in range(len(yaws)):
         newSail = sailGenerator(("sail"+ str(n)), initPos, initVel,
-                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps)
+                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps)#TODO: verify yaws[n] makes sense
         sailset = np.append(sailset, newSail)
 
     simset = np.append(sailset, sysbds)

@@ -202,8 +202,9 @@ print(isinstance(sailset[0], body.CelestialBody))
 '''
 timetest = spice.Time(1, 1, 2000, 360)
 simset = utils.packaged2DSim(timetest, [-0.6, 0, 0.6], 3)
-utils.animatebodies(simset, 10)
-
+print(simset.shape)
+print(simset[0].yawAngle.shape)
+print(simset[0].timeSteps.shape)
 
 '''
 testing below
