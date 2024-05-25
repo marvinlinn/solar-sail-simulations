@@ -1,17 +1,23 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import math
-import functions.body as body
 import functions.system as system
-import scipy.integrate as integ
-import stateCollection.spiceInterface as spice
-import utils
+import functions.utils as utils
+import csv
 
 #Pretraining Tools
 
 def generateBodyCSV(sailSet, filename="sails_traj_data"):
+    
+    f = filename + ".csv"
 
+    with open(f, 'w', newline='') as file:
+        writer = csv.writer(file)
+        
+        for sail in sailSet:
+            writer.writerow([sail.name, "x coord", "y coord", "z coord", "time", "yaw"])
+            numsteps = len(sail.timeSteps)
+            for n in range(numsteps):
+                pos = sail.locations[:3, n]
+                writer.writerow([str(n), pos[0], pos[1], pos[2], sail.timeSteps[n], sail.yawAngle[n]])
     return
 
 #for n different sail orientations and m different points to change sail orientation, n^m sails are generated
@@ -46,9 +52,9 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
                                   np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps)#TODO: verify yaws[n] makes sense
         sailset = np.append(sailset, newSail)
 
-    simset = np.append(sailset, sysbds)
+    #simset = np.append(sailset, sysbds)
     
-    return simset
+    return sailset, sysbds
 
 #generates an array filled with all possible state combinations for a given length
 #recursive -> head is passing the already determined pieces down the recursion
