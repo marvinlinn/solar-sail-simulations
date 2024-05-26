@@ -33,7 +33,7 @@ class CelestialBody(Body):
     display_log_base = 10
     def __init__(self, name, spkid, system, timeObj, mass, color='black', 
                  acceleration=None, opacity=1, path_style='trail', 
-                 trail_length=1, show_traj=True, marker='o', dispSize = 6):
+                 trail_length=1, show_traj=True, marker='o', dispSize = 6, timeStep = 5):
         self.spkid = spkid
         self.system = system
         
@@ -42,8 +42,10 @@ class CelestialBody(Body):
         self.dispSize = dispSize
 
         self.mass = mass
-        self.timeStep = 5 #TODO: Currently 5 hours, maybe want to make it not hard coded
+        self.timeStep = timeStep #TODO: Currently 5 hours, maybe want to make it not hard coded
         position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
+        self.timeSpan = np.linspace(0, timeObj.lengthSeconds, len(position[0]))#set timespan when planet is created
+        print(self.timeSpan)
         self.display_size = max(
             math.log(self.mass, self.display_log_base)/2,
             self.min_display_size,

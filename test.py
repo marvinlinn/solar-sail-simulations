@@ -202,14 +202,14 @@ print(isinstance(sysbds[0], body.CelestialBody))
 print(isinstance(sailset[0], body.CelestialBody))
 '''
 timetest = spice.Time(1, 1, 2000, 720)
-sailset, bdys = pretrain.packaged2DSim(timetest, [-0.6, 0, 0.6], 3)
+sailset, bdys = pretrain.packaged2DSim(timetest, [-0.6, 0, 0.6], 4, 2)
 print(sailset.shape)
 print(sailset[0].yawAngle.shape)
 print(sailset[0].timeSteps.shape)
 print(sailset[0].locations.shape)
 print(bdys[0].locations.shape)
-#utils.animatebodies(np.append(sailset, bdys), tstep=10)
-pretrain.generateBodyCSV(sailset, bdys[3])
+utils.animatebodies(np.append(sailset, bdys), tstep=10)
+#pretrain.generateBodyCSV(sailset, bdys[3])
 
 '''
 testing below

@@ -7,7 +7,7 @@ import functions.system as system
 import scipy.integrate as integ
 import stateCollection.spiceInterface as spice
 #important constants:
-G = 6.6743E-11
+G = 6.6743E-11 / 1e9 # in KN * Km^2 / Kg^2
 
 P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
 mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
@@ -108,13 +108,13 @@ mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
 AU = 1.496e11 /1e3  # astronomical unit in km, distance from sun to earth
 beta = 0.15 # ratio of peak solar sail force to sun's gravity
 
-# current system in place for sail calculations
+# current system in place for sail calculations, doesn't consider gravitation from other bodies
 def npSailODE(s, t, sail): # s and t are switched for temporary ODE
     coneAngle = sail.coneAngle(t, s) #coneAngle is going to be a tuple with a "yaw" and "pitch" component
     #print(f'cone: {coneAngle}')
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
-    asun = (-mu/(np.linalg.norm(r)**3)) * r
+    asun = (-mu/(np.linalg.norm(r)**3)) * r #gravity from the sun (0,0,0)
 
     # following calcs will be done in 2d via the transformation matrix
     rplanar = np.matmul(sail.initMatrix, r)
@@ -127,6 +127,34 @@ def npSailODE(s, t, sail): # s and t are switched for temporary ODE
 
     atotal = asun + asail
     return np.append(v, atotal)
+
+# may be used to include bodies gravity if necessary, bodies -> array with planets and NEOs, currently bodies will only contain the trajectory target
+def npSailODEwithBodies(s, t, sail, bodies):
+    coneAngle = sail.coneAngle(t, s) #coneAngle is going to be a tuple with a "yaw" and "pitch" component
+    #print(f'cone: {coneAngle}')
+    r = np.array([s[0], s[1], s[2]])
+    v = np.array([s[3], s[4], s[5]])
+    asun = (-mu/(np.linalg.norm(r)**3)) * r
+
+    totalbdGravAccel = 0
+    for bd in bodies:
+        bdloc = np.array([np.interp(t, bd.timeSpan, bd.locations[0]), np.interp(t, bd.timeSpan, bd.locations[1]), np.interp(t, bd.timeSpan, bd.locations[2])])
+        bdr = bdloc - r
+        abd = (G * bd.mass) / (np.linalg.norm(bdr)**3) * bdr
+        totalbdGravAccel += abd 
+
+    # following calcs will be done in 2d via the transformation matrix
+    rplanar = np.matmul(sail.initMatrix, r)
+    theta = math.atan2(rplanar[1], rplanar[0])
+    phi = math.atan2(rplanar[2], np.sqrt(rplanar[1]**2 + rplanar[0]**2))
+    asailMag = (beta * mu / np.dot(rplanar, rplanar) * (np.cos(coneAngle[0]) ** 2) * (np.cos(coneAngle[1]) ** 2))
+    asailNorm = np.array([np.cos(coneAngle[1] + phi)*np.cos(coneAngle[0] + theta), np.cos(coneAngle[1] + phi)*np.sin(coneAngle[0]+theta), np.sin(coneAngle[1] + phi)])
+    asailplanar = asailMag * asailNorm
+    asail = np.matmul(sail.invMatrix, asailplanar)
+
+    atotal = asun + asail + totalbdGravAccel
+    return np.append(v, atotal)
+
 
 # sail cone angle function factory
 def cone_angle_factory(t_thresholds, yaws, pitches):
@@ -152,7 +180,8 @@ def cone_angle_factory(t_thresholds, yaws, pitches):
 # sail creator, creates a sail object and solves the trajectory
 # TODO: ngl I think the term trajectory could be a bit confusing since we are 
 # controlling the trajectory of the inputs not the actual path of the spacecraft
-def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
+# bodies -> the planetary bodies/neos being considered in the calculations
+def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bodies=[]):
     
     #generate the transformation matrix needed
     er = initLoc / np.linalg.norm(initLoc)
@@ -165,7 +194,7 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps):
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions =np.append(initLoc, initVel)
    
-    newSailLocs = integ.odeint(npSailODE, initialconditions, span, args=(newSail,), rtol=1e-8)
+    newSailLocs = integ.odeint(npSailODEwithBodies, initialconditions, span, args=(newSail,bodies), rtol=1e-8)
     newSail.timeSteps = span
     newSail.locations = np.transpose(newSailLocs)[:3,:]
     newSail.yawAngle = np.zeros(len(newSail.timeSteps))

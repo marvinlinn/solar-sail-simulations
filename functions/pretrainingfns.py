@@ -25,7 +25,8 @@ def generateBodyCSV(sailSet, targetbd, filename="sails_traj_data"):
     return
 
 #for n different sail orientations and m different points to change sail orientation, n^m sails are generated
-def packaged2DSim(simTime, sailorientations, numsailchanges):
+#targetbd will be replaced with a neo body, for testing purposes we're gonna just use a planet so target bd will be an index in SolarSystem
+def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
     timeSeconds = simTime.lengthSeconds
 
     #planet generation
@@ -53,7 +54,7 @@ def packaged2DSim(simTime, sailorientations, numsailchanges):
 
     for n in range(len(yaws)):
         newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
-                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps)#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
+                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps, bodies=[sysbds[targetbd]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
         sailset = np.append(sailset, newSail)
 
     #simset = np.append(sailset, sysbds)
