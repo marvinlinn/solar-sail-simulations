@@ -7,7 +7,7 @@ import functions.system as system
 import scipy.integrate as integ
 import stateCollection.spiceInterface as spice
 #important constants:
-G = 6.6743E-11 / 1e9 # in KN * Km^2 / Kg^2
+G = 6.6743E-11/1e9 # in KN * Km^2 / Kg^2
 
 P0 = 9E-9 #newtons per square meeter -> solar sail effectiveness
 mu = 1.327e20 /1e9 # mu in km^3/s^2, sun's gravitational parameter
@@ -140,7 +140,7 @@ def npSailODEwithBodies(s, t, sail, bodies):
     for bd in bodies:
         bdloc = np.array([np.interp(t, bd.timeSpan, bd.locations[0]), np.interp(t, bd.timeSpan, bd.locations[1]), np.interp(t, bd.timeSpan, bd.locations[2])])
         bdr = bdloc - r
-        abd = (G * bd.mass) / (np.linalg.norm(bdr)**3) * bdr
+        abd = (-G * bd.mass) / (np.linalg.norm(bdr)**3) * bdr
         totalbdGravAccel += abd 
 
     # following calcs will be done in 2d via the transformation matrix
@@ -194,7 +194,7 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions =np.append(initLoc, initVel)
    
-    newSailLocs = integ.odeint(npSailODEwithBodies, initialconditions, span, args=(newSail,bodies), rtol=1e-8)
+    newSailLocs = integ.odeint(npSailODEwithBodies, initialconditions, span, args=(newSail, bodies), rtol=1e-8)
     newSail.timeSteps = span
     newSail.locations = np.transpose(newSailLocs)[:3,:]
     newSail.yawAngle = np.zeros(len(newSail.timeSteps))

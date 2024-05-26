@@ -34,7 +34,6 @@ def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
     sys = system.SolarSystem(sysname, simTime)
     sysbds = sys.bodies
     numSteps = len(sysbds[0].locations[0])
-    print(sysbds[0].locations.shape)
 
 
     #trajectories generation
@@ -42,7 +41,7 @@ def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
     yaws = permutationGenerator(sailorientations, numsailchanges+1)
     timeInt = np.zeros(numsailchanges+1)
     for n in range(numsailchanges+1):
-        timeInt[n] = n * timeSeconds
+        timeInt[n] = n * (timeSeconds/numsailchanges)
 
     #sail generation
     #init conditions -> earth position, velocity must also be vectorized correctly
@@ -50,7 +49,6 @@ def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
     initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(sysbds[3].locations.T[1]-sysbds[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
     initVel = initVelVec * 30
     sailset = np.array([])
-
 
     for n in range(len(yaws)):
         newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
