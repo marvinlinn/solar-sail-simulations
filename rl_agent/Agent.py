@@ -1,4 +1,4 @@
-import World
+import rl_agent.World
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
@@ -117,36 +117,45 @@ class ParallelAgent(Agent):
                          learning_rate_Q, decay_rate)
 
     def train(self, max_duration, episodes_per_epoch, epochs):
-        pass
+        r_mean = 0
+        states = None
+        for epoch in range(episodes_per_epoch):
+            for cycle in track(range(episodes_per_epoch), description=f'Epoch {epoch}'):
+                r_mean, states = self.training_step(max_duration)
+            print(f'epoch {epoch}: Mean Reward = {r_mean}')
+        return states
 
     def training_step(self, max_duration):
-        R_total = np.zeros(self.world.num_sails)
+        R_total = np.zeros((self.world.num_sails, 1))
+        all_S = []
         S = self.world.reset()
 
         with tf.GradientTape() as policy_tape:
-            mu, sigma = self.policy(s)
-            normal = tfp.distributions.normal(mu, sigma)
+            mu, sigma = self.policy(S)
+            normal = tfp.distributions.Normal(mu, sigma)
             A = normal.sample()
             log_prob = normal.log_prob(A)
 
         # get Q(s,a)
-        SA = np.hstack(S, A)
+        SA = np.hstack((S, A))
         with tf.GradientTape() as Q_tape:
             Q_SA = self.Q(SA)
 
         
         for t in range(max_duration):
             # sample reward and get next state
-            R, S_next = self.world.advance_simulation(a_raw)
+            R, S_next = self.world.advance_simulation(A)
+
+            # Totals
             R_total += R
+            all_S.append(S)
 
             # sample next action from policy
             with tf.GradientTape() as policy_tape_next:
-                dist_next, a_next, a_next_raw = self._apply_policy(s)
-                mu, sigma = self._apply_policy(s)
+                mu, sigma = self.policy(S)
                 normal = tfp.distributions.Normal(mu, sigma)
                 A_next = normal.sample()
-                log_prob_next = dist.log_prob(A_next)
+                log_prob_next = normal.log_prob(A_next)
 
             # update policy parameters theta += alpha * Q(s,a) * grad log pi(a|s)
             with policy_tape:
@@ -157,7 +166,7 @@ class ParallelAgent(Agent):
                                                  self.policy.trainable_variables))
 
             # compute TD error
-            SA_next = np.hstack(A_next, A_next)
+            SA_next = np.hstack((S_next, A_next))
             with tf.GradientTape() as Q_tape_next:
                 Q_SA_next = self.Q(SA_next)
             td_error = R + self.decay_rate * Q_SA_next - Q_SA
@@ -177,8 +186,9 @@ class ParallelAgent(Agent):
             Q_SA = Q_SA_next
             Q_tape = Q_tape_next
 
+        r_total = np.sum(R_total, axis=0)
         print(f'mean: {r_total/max_duration}, r: {r_total}, md: {max_duration}')
-        return r_total/max_duration, states
+        return r_total/max_duration, all_S
         
 
 class AsyncAgent(Agent):
