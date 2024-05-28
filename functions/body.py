@@ -33,7 +33,7 @@ class CelestialBody(Body):
     display_log_base = 10
     def __init__(self, name, spkid, system, timeObj, mass, color='black', 
                  acceleration=None, opacity=1, path_style='trail', 
-                 trail_length=1, show_traj=True, marker='o', dispSize = 6):
+                 trail_length=1, show_traj=True, marker='o', dispSize = 6, timeStep = 5):
         self.spkid = spkid
         self.system = system
         
@@ -42,8 +42,10 @@ class CelestialBody(Body):
         self.dispSize = dispSize
 
         self.mass = mass
-        self.timeStep = 5 #in hours
+        self.timeStep = timeStep #TODO: Currently 5 hours, maybe want to make it not hard coded
         position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
+        self.timeSpan = np.linspace(0, timeObj.lengthSeconds, len(position[0]))#set timespan when planet is created
+        print(self.timeSpan)
         self.display_size = max(
             math.log(self.mass, self.display_log_base)/2,
             self.min_display_size,
@@ -108,7 +110,8 @@ class SolarSail(SatelliteBody):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         
-        self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle
+        self.timeSteps = 0 #PLACEHOLDER steps will be saved as an array in processing
+        self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle, Will be OVERWRITTEN with angles present during timesteps
         self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
         self.rollAngle = rollAngle #degrees, 0 means in the same plane as the orbit of the planets
         

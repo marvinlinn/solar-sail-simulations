@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integ
 import stateCollection.spiceInterface as spice
+import functions.pretrainingfns as pretrain
 
 #solar_system = system.SolarSystem("solar")
 #solar_system.animateBodies()
@@ -59,7 +60,9 @@ for n in range(1000):
 utils.animatebodies(sailset, 50)
 """
 
-# Deliverable
+# Deliverable (large scale)
+
+'''
 # 6 different points varied between 0.6, 0, -0.6
 testTime = spice.Time(1, 1, 2000, 360) # 2 years
 timeSeconds = testTime.lengthSeconds
@@ -109,7 +112,53 @@ print(a[0], a[0][0])
 
 #print(initPos)
 #print(initVelVec)
+'''
 
+#Small (light) test
+'''
+
+testTime = spice.Time(1, 1, 2000, 360) # 1 years
+timeSeconds = testTime.lengthSeconds
+
+
+#planet generation
+sys = system.SolarSystem((testTime.length, "day sys"), testTime)
+sysbds = sys.bodies
+numSteps = len(sysbds[0].locations[0])
+
+
+#trajectories generation
+
+
+pitches = np.array([[0,0,0,0]])
+yaws = np.array([[0,0,0,0]])
+possibleOrients = np.array([-0.6,0,0.6])
+timeInt = np.array([0, timeSeconds/3, (2*timeSeconds)/3, timeSeconds])
+
+
+for a in possibleOrients:
+    for b in possibleOrients:
+        for c in possibleOrients:
+            pitches = np.append(pitches, [[a,b,c,0]], axis=0)
+            yaws = np.append(yaws, [[0.6,0.6,0.6,0.6]], axis=0)
+
+
+#sail generation
+#init conditions -> earth position, velocity must also be vectorized correctly
+initPos = sysbds[3].locations.T[0]
+initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(sysbds[3].locations.T[1]-sysbds[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
+initVel = initVelVec * 30
+sailset = np.array([])
+
+
+for n in range(len(yaws)):
+    newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel,
+                                  np.array([timeInt, yaws[n], pitches[n]]), [0, timeSeconds], numSteps)
+    sailset = np.append(sailset, newSail)  
+
+
+utils.animatebodies(np.append(sailset, sysbds), 5)
+'''
 
 '''
 less iterations hopefully less messy
@@ -127,6 +176,8 @@ numSteps = len(sysbds[0].locations[0])
 #trajectories generation
 trajs = np.array([[0,0,0,0]])
 possibleOrients = np.array([-0.6,0,0.6])
+yaws = pretrain.permutationGenerator(possibleOrients, 4)
+print(yaws[1])
 timeInt = np.array([0, timeSeconds/3, (2*timeSeconds)/3, timeSeconds])
 
 for a in possibleOrients:
@@ -143,7 +194,7 @@ sailset = np.array([])
 
 for n in range(len(trajs)):
     newSail = utils.sailGenerator(("sail"+ str(n)), initPos, initVel, 
-                                  np.array([timeInt, trajs[n]]), [0, timeSeconds], numSteps)
+                                  np.array([timeInt, yaws[n], trajs[0]]), [0, timeSeconds], numSteps)
     sailset = np.append(sailset, newSail)  
 
 utils.animatebodies(np.append(sailset, sysbds), 10)
@@ -151,7 +202,19 @@ utils.animatebodies(np.append(sailset, sysbds), 10)
 print(sysbds[0])
 print(isinstance(sysbds[0], body.CelestialBody))
 print(isinstance(sailset[0], body.CelestialBody))
+
 '''
+
+timetest = spice.Time(1, 1, 2000, 1200)
+sailset, bdys = pretrain.packaged2DSim(timetest, [-0.6, 0, 0.6], 5, 2)
+print(sailset.shape)
+#print(sailset[0].yawAngle.shape)
+#print(sailset[0].timeSteps.shape)
+#print(sailset[0].locations.shape)
+#print(bdys[0].locations.shape)
+utils.animatebodies(np.append(sailset, bdys), tstep=10)
+#pretrain.generateBodyCSV(sailset, bdys[3])
+
 '''
 testing below
 
