@@ -206,14 +206,15 @@ print(isinstance(sailset[0], body.CelestialBody))
 '''
 
 timetest = spice.Time(1, 1, 2000, 1200)
-sailset, bdys = pretrain.packaged2DSim(timetest, [-0.6, 0, 0.6], 5, 2)
+targetbds = system.SolarSystem('targets', timetest).bodies
+sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, 0, 0.6], 6, targetbds[2])
 print(sailset.shape)
 #print(sailset[0].yawAngle.shape)
 #print(sailset[0].timeSteps.shape)
 #print(sailset[0].locations.shape)
 #print(bdys[0].locations.shape)
-utils.animatebodies(np.append(sailset, bdys), tstep=10)
-#pretrain.generateBodyCSV(sailset, bdys[3])
+#utils.animatebodies(np.append(sailset, bdys), tstep=10)
+pretrain.generateBodyCSV(sailset, target)
 
 '''
 testing below

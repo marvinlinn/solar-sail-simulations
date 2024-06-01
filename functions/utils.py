@@ -195,16 +195,16 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
     initialconditions =np.append(initLoc, initVel)
    
     newSailLocs = integ.odeint(npSailODEwithBodies, initialconditions, span, args=(newSail, bodies), rtol=1e-8)
-    newSail.timeSteps = span
+    newSail.timeSpan = span
     newSail.locations = np.transpose(newSailLocs)[:3,:]
-    newSail.yawAngle = np.zeros(len(newSail.timeSteps))
+    newSail.yawAngle = np.zeros(len(newSail.timeSpan))
 
     #newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail], method='RK45')
     #newSail.timeSteps = newSailLocs.t <- solve ivp
     #newSail.locations = newSailLocs.y[:3, :] <- solve ivp
     
-    for n in range(len(newSail.timeSteps)): #finds what angle corresponds to what timestep in the integration
-        newSail.yawAngle[n] = coneAngle(newSail.timeSteps[n],[0])[0]
+    for n in range(len(newSail.timeSpan)): #finds what angle corresponds to what timestep in the integration
+        newSail.yawAngle[n] = coneAngle(newSail.timeSpan[n],[0])[0]
     return newSail
 
 #another implementation used for odeint based systems

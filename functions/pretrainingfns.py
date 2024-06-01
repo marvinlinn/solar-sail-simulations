@@ -6,23 +6,41 @@ import csv
 #Pretraining Tools
 
 #generates a CSV of data which takes in a set of sails, and a target bd.
-def generateBodyCSV(sailSet, targetbd, filename="sails_traj_data"):
+def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data"):
     
     f = filename + ".csv"
-
     with open(f, 'w', newline='') as file:
         writer = csv.writer(file, delimiter='|')
         
-        for sail in sailSet:
-            writer.writerow([sail.name + " " + targetbd.name, "sail x", "sail y", "sail z", "time", "yaw", "target x", "target y", "target z", "distance x", "distance y", "distance z", "abs distance"])
-            numsteps = len(sail.timeSteps)
+        #solve for things such as distance vectors and abs distance, sort based on shortest distance 
+        processedSailSet = calculateExtraData(unProcessedSailSet, targetbd)
+
+        for sail in processedSailSet:
+            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance), "sail x", "sail y", "sail z", "time", "yaw", "target x", "target y", "target z", "distance x", "distance y", "distance z", "abs distance"])
+            numsteps = len(sail.timeSpan)
             for n in range(numsteps):
                 sailPos = sail.locations[:3, n]
                 targetPos = targetbd.locations[:3, n]
-                distVect = targetPos - sailPos
-                distMag = np.linalg.norm(distVect)
-                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSteps[n], sail.yawAngle[n], targetPos[0], targetPos[1], targetPos[2], distVect[0], distVect[1], distVect[2], distMag])
+                distFromTarget = sail.distanceMatrix[:, n]
+                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], targetPos[0], targetPos[1], targetPos[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
     return
+
+def calculateExtraData(sailSet, targetbd):
+    
+    #create a matrix of distance vectors for display and computation purposes, calculate/store the shortest distance from target 
+    for sail in sailSet:
+        numsteps = len(sail.timeSpan)        
+        sail.distanceMatrix = np.full((4, numsteps), np.inf)
+        for n in range(numsteps):
+            sailPos = sail.locations[:3, n]
+            targetPos = targetbd.locations[:3, n]
+            distVect = targetPos - sailPos
+            distMag = np.linalg.norm(distVect)
+            sail.distanceMatrix[:,n] = np.append(distVect, np.array([distMag]))
+        sail.closestAbsDistance = min(sail.distanceMatrix[3,:])
+    
+    #returns a sorted set of sails based on closest absolute distance
+    return sorted(sailSet, key=lambda sail: sail.closestAbsDistance)
 
 #for n different sail orientations and m different points to change sail orientation, n^m sails are generated
 #targetbd will be replaced with a neo body, for testing purposes we're gonna just use a planet so target bd will be an index in SolarSystem
@@ -50,14 +68,16 @@ def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
     initVel = initVelVec * 30
     sailset = np.array([])
 
+    print(targetbd.name)
+
     for n in range(len(yaws)):
         newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
-                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps, bodies=[sysbds[targetbd]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
+                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps, bodies=[targetbd])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
         sailset = np.append(sailset, newSail)
 
     #simset = np.append(sailset, sysbds)
     
-    return sailset, sysbds
+    return sailset, sysbds, targetbd
 
 #generates an array filled with all possible state combinations for a given length
 #recursive -> head is passing the already determined pieces down the recursion
