@@ -15,14 +15,21 @@ def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data"):
         #solve for things such as distance vectors and abs distance, sort based on shortest distance 
         processedSailSet = calculateExtraData(unProcessedSailSet, targetbd)
 
+        #write target location information.
+        writer.writerow(["target: " + targetbd.name, "target x", "target y", "target z", "time"])
+        for n in range(len(targetbd.timeSpan)):
+            targetPos = targetbd.locations[:3, n]
+            writer.writerow([str(n), targetPos[0], targetPos[1], targetPos[2], targetbd.timeSpan[n]])
+
+        #write sail location information.
         for sail in processedSailSet:
-            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance), "sail x", "sail y", "sail z", "time", "yaw", "target x", "target y", "target z", "distance x", "distance y", "distance z", "abs distance"])
+            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance), "sail x", "sail y", "sail z", "time", "yaw", "sail Vx", "sail Vy", "sail Vz", "distance x", "distance y", "distance z", "abs distance"])
             numsteps = len(sail.timeSpan)
             for n in range(numsteps):
                 sailPos = sail.locations[:3, n]
-                targetPos = targetbd.locations[:3, n]
+                sailVel = sail.velocity[:3, n]
                 distFromTarget = sail.distanceMatrix[:, n]
-                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], targetPos[0], targetPos[1], targetPos[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
+                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], sailVel[0], sailVel[1], sailVel[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
     return
 
 def calculateExtraData(sailSet, targetbd):

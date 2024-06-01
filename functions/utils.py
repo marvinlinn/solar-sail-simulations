@@ -198,6 +198,7 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
     newSail.timeSpan = span
     newSail.locations = np.transpose(newSailLocs)[:3,:]
     newSail.yawAngle = np.zeros(len(newSail.timeSpan))
+    newSail.velocity = np.transpose(newSailLocs)[3:,:]
 
     #newSailLocs = integ.solve_ivp(npSailODE, timeInterval, initialconditions, rtol=1e-8,t_eval=span, args=[newSail], method='RK45')
     #newSail.timeSteps = newSailLocs.t <- solve ivp

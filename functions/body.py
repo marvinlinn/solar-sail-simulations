@@ -112,7 +112,8 @@ class SolarSail(SatelliteBody):
         self.timeSpan = 0 #PLACEHOLDER steps will be saved as an array in processing
         self.closestAbsDistance = np.inf #store the closest distance
         self.closestTime = np.inf #store the time at which the closest distance is achieved TODO: determine if this needs to be implemented
-        self.distanceMatrix = 0 #PLACEHOLDER will be populated in pretrainingfns 4 x len(timespan), (0 -> x, 1-> y, 2 -> z, 3 -> abs distance) 
+        self.distanceMatrix = 0 #PLACEHOLDER will be populated in pretrainingfns shape: 4 x len(timespan), (0 -> x, 1-> y, 2 -> z, 3 -> abs distance)
+        self.velocity = 0 #PlACEHOLDER will be populated in pretraining 
 
         self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle, Will be OVERWRITTEN with angles present during timesteps
         self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
