@@ -1,10 +1,12 @@
 import rl_agent.World
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 import tensorflow_probability as tfp
 
 from rich.progress import track
 import multiprocessing
+from multiprocessing import Process
 
 class Agent():
 
@@ -189,6 +191,68 @@ class ParallelAgent(Agent):
         r_total = np.sum(R_total, axis=0)
         print(f'mean: {r_total/max_duration}, r: {r_total}, md: {max_duration}')
         return r_total/max_duration, all_S
+
+    def _pretrain_SAR_iterator(self, files, batch_size, load_threshold=2):
+        # TODO: untested! also maybe shuffle? NEED EVAL METRIC FOR OVERFIT
+        def get_SAR(file, queue=None):
+            df = pd.read_csv(file)
+            S = df[['sail_x']] # TODO: get real cols
+            A = df[['yaw']]
+            R = 1 / np.array(df[['dist2']])
+            if queue is not None:
+                queue.put((S, A, R))
+            return S, A, R
+
+        queue = multiprocessing.Queue()
+        p = None
+
+        for file_i, file in enumerate(files):
+            if p is None:
+                S, A, R = get_SAR(file)
+            else:
+                p.join(timeout=0)
+                if p.is_alive():
+                    print('SAR not ready! increasing load threshold')
+                    load_threshold += 1
+                p.join()
+                S, A, R = queue.get()
+                p = None
+
+            no_batches = -(len(S) // -batch_size)
+            for i in range(no_batches):
+                if p is None and i >= no_batches - load_threshold:
+                    p = Process(target=get_SAR, args=(file, queue))
+                    p.start()
+                end = min(i+batch_size, len(S))
+                yield S[i:end], A[i:end], R[i:end]
+
+    def pretrain(self, batch_size=1024, epochs=5):
+        for epoch in range(epochs):
+            for s, a, r in self._pretrain_SAR_iterator('', batch_size):
+                # compute Q(s,a) for batch
+                with tf.GradientTape() as Q_tape:
+                    Qsa = self.Q(np.hstack((s, a)))
+                
+                # compute log prob policy(a|s)
+                with tf.GradientTape() as policy_tape:
+                    mu, sigma = self.policy(s[:-1])
+                    normal = tfp.distributions.Normal(mu, sigma)
+                    log_prob = normal.log_prob(a[:-1])
+                    policy_grad_target = \
+                            self.learning_rate_policy * Qsa[:-1] * log_prob
+
+                # update policy params
+                policy_grads = policy_tape.gradient(policy_grad_target, 
+                                                    self.policy.trainable_variables)
+
+                # compute td error for batch
+                td_error = (r + self.decay_rate * (Qsa[1:] - Qsa[:-1])).numpy()
+
+                # update Q function
+                with Q_tape:
+                    Q_grad_target = self.learning_rate_Q * td_error * Qsa[:-1]
+                Q_grads = Q_tape.gradient(Q_grad_target, self.Q.trainable_variables)
+                self.q_optimizer.apply_gradients(zip(Q_grads, self.Q.trainable_variables))
         
 
 class AsyncAgent(Agent):

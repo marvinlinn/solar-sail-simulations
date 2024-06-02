@@ -66,12 +66,13 @@ class ParallelTrackNEO(ParallelWorld):
     #   Uranus:  mu = 5.7939399e15      / 1e9,
     #   Neptune: mu = 6.8365299e15      / 1e9 ]
 
-    def __init__(self, num_sails=50, dt=5):
+    def __init__(self, num_sails=50, dt=5, control_interval=1):
         self.time = {'get pos': 0, 'square dists': 0, 'grav accel': 0, 'sail accel': 0, 'update': 0}
 
         self.num_sails = num_sails
         dt_hours = dt
         self.dt = dt_hours * 3600
+        self.control_interval=control_interval
 
         self.bodies = {}
         self.bodies['name'] = np.array(['Sun', 'Mercury', 'Venus', 'Earth', 
@@ -138,17 +139,21 @@ class ParallelTrackNEO(ParallelWorld):
     def reset(self):
         self.t = 0 # Index of time. Actual time = self.dt * self.t
 
-        self.body_pos = self.bodies['positions'][self.t:self.t+1]
+        self._update_body_pos(self.t)
 
         self.P = np.tile(self.init_pos, (self.num_sails, 1)) # (num_sails, 3)
         self.V = np.tile(self.init_vel, (self.num_sails, 1)) # (num_sails, 3)
-        self.Pt = np.random.random((self.num_sails, 3)) # target pos
-        self.Vt = np.zeros((self.num_sails, 3)) # target velocity
+
+        self.Pt = np.tile(self.body_pos[self.target_body], 
+                          (self.num_sails, 1)) # target pos
+        self.Vt = np.tile((self.bodies[self.t+1:self.t+2][self.target_body] 
+                           - self.bodies[self.t:self.t+1][self.target_body]) 
+                          / self.dt, (self.num_sails, 1)) # target velocity
 
         return self._get_state()
 
     def max_sim_length(self):
-        return len(self.bodies['positions'])
+        return len(self.bodies['positions']) - 1
 
     def _get_state(self):
         return np.hstack((self.P, self.V, self.Pt, self.Vt))
@@ -158,53 +163,61 @@ class ParallelTrackNEO(ParallelWorld):
                'simulation time exceeds loaded dataset'
         self.body_pos = self.bodies['positions'][t:t+1]
 
+        self.Pt = np.tile(self.body_pos[self.target_body], 
+                          (self.num_sails, 1)) # target pos
+        self.Vt = np.tile((self.bodies[self.t+1:self.t+2][self.target_body] 
+                           - self.bodies[self.t:self.t+1][self.target_body]) 
+                          / self.dt, (self.num_sails, 1)) # target velocity
+
+
     def advance_simulation(self, A):
-        control_angle = A[:,0:1]
-        
-        i = time()
-        self._update_body_pos(self.t)
-        sail_pos = self.P.reshape((self.num_sails, 1, 3))
-        self.time['get pos'] += time()-i
+        for _ in range(self.control_interval):
+            control_angle = A[:,0:1]
+            
+            i = time()
+            self._update_body_pos(self.t)
+            sail_pos = self.P.reshape((self.num_sails, 1, 3))
+            self.time['get pos'] += time()-i
 
-        # Compute Gravity Accel
-        i = time()
-        r = self.body_pos - sail_pos
-        r2 = np.sum(r*r, axis=2)
-        r_hat = r / np.linalg.norm(r, axis=2)[:,:,np.newaxis]
-        self.time['square dists'] += time()-i
+            # Compute Gravity Accel
+            i = time()
+            r = self.body_pos - sail_pos
+            r2 = np.sum(r*r, axis=2)
+            r_hat = r / np.linalg.norm(r, axis=2)[:,:,np.newaxis]
+            self.time['square dists'] += time()-i
 
-        i = time()
-        n_accel_g = (self.bodies['mu'] / r2) # ||a_g|| TODO: check dims
-        accel_g = n_accel_g.reshape(self.num_sails, self.num_bodies, 1) * r_hat # F_g
-        accel_g_total = accel_g.sum(axis=1)
-        self.time['grav accel'] += time()-i
+            i = time()
+            n_accel_g = (self.bodies['mu'] / r2) # ||a_g|| TODO: check dims
+            accel_g = n_accel_g.reshape(self.num_sails, self.num_bodies, 1) * r_hat # F_g
+            accel_g_total = accel_g.sum(axis=1)
+            self.time['grav accel'] += time()-i
 
-        # Compute Sail Force
-        cos_angle = np.cos(control_angle)
-        cos_angle_extd = cos_angle[:,:,np.newaxis]
-        sin_angle = np.sin(control_angle)[:,:,np.newaxis]
-        rotation_matrix = cos_angle_extd * np.identity(3) + \
-                          sin_angle * self.pp_cross_matrix + \
-                          (1 - cos_angle_extd) * self.pp_outer_prod
-        sail_norm = sail_pos / np.linalg.norm(sail_pos, axis=2)[:,np.newaxis]
+            # Compute Sail Force
+            cos_angle = np.cos(control_angle)
+            cos_angle_extd = cos_angle[:,:,np.newaxis]
+            sin_angle = np.sin(control_angle)[:,:,np.newaxis]
+            rotation_matrix = cos_angle_extd * np.identity(3) + \
+                              sin_angle * self.pp_cross_matrix + \
+                              (1 - cos_angle_extd) * self.pp_outer_prod
+            sail_norm = sail_pos / np.linalg.norm(sail_pos, axis=2)[:,np.newaxis]
 
-        # equivalent to finding A_i @ b_i for all i. elementwise matrix product
-        # equivalent to [rotation_matrix[i] @ sail_norm[i][0] for i in range(num_sails)]
-        sail_norm = np.einsum('ijk,i...k->ij', rotation_matrix, sail_norm, optimize=True)        
-        sail_dist2 = np.sum(sail_pos * sail_pos, axis=2)
-        sail_accel = ParallelTrackNEO.mu_sun * ParallelTrackNEO.beta \
-                / sail_dist2 * cos_angle * sail_norm
-        self.time['sail accel'] += time()-i
+            # equivalent to finding A_i @ b_i for all i. elementwise matrix product
+            # equivalent to [rotation_matrix[i] @ sail_norm[i][0] for i in range(num_sails)]
+            sail_norm = np.einsum('ijk,i...k->ij', rotation_matrix, sail_norm, optimize=True)        
+            sail_dist2 = np.sum(sail_pos * sail_pos, axis=2)
+            sail_accel = ParallelTrackNEO.mu_sun * ParallelTrackNEO.beta \
+                    / sail_dist2 * cos_angle * sail_norm
+            self.time['sail accel'] += time()-i
 
-        # Update Pos
-        i = time()
-        total_accel = accel_g_total + sail_accel
-        self.P += 0.5*self.dt**2 * total_accel + self.dt * self.V
-        self.V += total_accel * self.dt
-        self.time['update'] += time() - i
+            # Update Pos
+            i = time()
+            total_accel = accel_g_total + sail_accel
+            self.P += 0.5*self.dt**2 * total_accel + self.dt * self.V
+            self.V += total_accel * self.dt
+            self.time['update'] += time() - i
 
-        # Update time
-        self.t += 1
+            # Update time
+            self.t += 1
 
         # Reward
         rewards = 1/r2[:,self.target_body:self.target_body+1] # TODO: reward funct
