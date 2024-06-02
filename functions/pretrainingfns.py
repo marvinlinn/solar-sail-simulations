@@ -6,7 +6,7 @@ import csv
 #Pretraining Tools
 
 #generates a CSV of data which takes in a set of sails, and a target bd.
-def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data"):
+def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data", numsails=0):
     
     f = filename + ".csv"
     with open(f, 'w', newline='') as file:
@@ -14,6 +14,10 @@ def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data"):
         
         #solve for things such as distance vectors and abs distance, sort based on shortest distance 
         processedSailSet = calculateExtraData(unProcessedSailSet, targetbd)
+
+        #restricts the number of sails being written to the file
+        if numsails > 0:
+            processedSailSet = processedSailSet[:numsails]
 
         #write target location information.
         writer.writerow(["target: " + targetbd.name, "target x", "target y", "target z", "time"])
