@@ -45,7 +45,6 @@ class CelestialBody(Body):
         self.timeStep = timeStep #TODO: Currently 5 hours, maybe want to make it not hard coded
         position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
         self.timeSpan = np.linspace(0, timeObj.lengthSeconds, len(position[0]))#set timespan when planet is created
-        print(self.timeSpan)
         self.display_size = max(
             math.log(self.mass, self.display_log_base)/2,
             self.min_display_size,
@@ -110,7 +109,12 @@ class SolarSail(SatelliteBody):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
         
-        self.timeSteps = 0 #PLACEHOLDER steps will be saved as an array in processing
+        self.timeSpan = 0 #PLACEHOLDER steps will be saved as an array in processing
+        self.closestAbsDistance = np.inf #store the closest distance
+        self.closestTime = np.inf #store the time at which the closest distance is achieved TODO: determine if this needs to be implemented
+        self.distanceMatrix = 0 #PLACEHOLDER will be populated in pretrainingfns shape: 4 x len(timespan), (0 -> x, 1-> y, 2 -> z, 3 -> abs distance)
+        self.velocity = 0 #PlACEHOLDER will be populated in pretraining 
+
         self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle, Will be OVERWRITTEN with angles present during timesteps
         self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
         self.rollAngle = rollAngle #degrees, 0 means in the same plane as the orbit of the planets
