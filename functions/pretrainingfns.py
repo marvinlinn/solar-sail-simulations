@@ -2,13 +2,51 @@ import numpy as np
 import functions.system as system
 import functions.utils as utils
 import csv
+import os
 
 #Pretraining Tools
 
 #generates a CSV of data which takes in a set of sails, and a target bd.
-def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data", numsails=0):
+def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data", numsails=0, simStartDate=''):
     
-    f = filename + ".csv"
+    fileHeader = "pretrain_data/" + simStartDate + "/"
+    fileDirectory = './' + fileHeader
+    if (not os.path.exists(fileDirectory)):
+        os.makedirs(fileDirectory)
+        print("Made a new directory: " + fileDirectory)
+
+    #generate target body's CSV
+    fileAddress = fileHeader + 'target.csv'
+    with open(fileAddress, 'w', newline='') as file:
+        writer = csv.writer(file, delimiter='|')
+        writer.writerow(["target: " + targetbd.name, "target x", "target y", "target z", "time"])
+        for n in range(len(targetbd.timeSpan)):
+            targetPos = targetbd.locations[:3, n]
+            writer.writerow([str(n), targetPos[0], targetPos[1], targetPos[2], targetbd.timeSpan[n]])
+    
+    ## Write Sail CSVs
+    #solve for things such as distance vectors and abs distance, sort based on shortest distance 
+    processedSailSet = calculateExtraData(unProcessedSailSet, targetbd)
+
+    #restricts the number of sails being written to the file
+    if numsails > 0:
+        processedSailSet = processedSailSet[:numsails]
+
+    #write and store each sail in a separatefile
+    for sail in processedSailSet:
+        fileAddress = fileHeader + sail.name + '.csv'
+        with open(fileAddress, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter='|')
+        
+            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance), "sail x", "sail y", "sail z", "time", "yaw", "sail Vx", "sail Vy", "sail Vz", "distance x", "distance y", "distance z", "abs distance"])
+            numsteps = len(sail.timeSpan)
+            for n in range(numsteps):
+                sailPos = sail.locations[:3, n]
+                sailVel = sail.velocity[:3, n]
+                distFromTarget = sail.distanceMatrix[:, n]
+                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], sailVel[0], sailVel[1], sailVel[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
+    '''
+    f = "pretrain_data/"+ filename + ".csv"
     with open(f, 'w', newline='') as file:
         writer = csv.writer(file, delimiter='|')
         
@@ -34,6 +72,7 @@ def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data", nu
                 sailVel = sail.velocity[:3, n]
                 distFromTarget = sail.distanceMatrix[:, n]
                 writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], sailVel[0], sailVel[1], sailVel[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
+    '''
     return
 
 def calculateExtraData(sailSet, targetbd):
