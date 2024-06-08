@@ -135,13 +135,16 @@ def permutationGenerator(states, length, head=np.array([])):
     retArray = np.array([])
 
     if length == 1:
+        retArray = np.array([np.append(head, np.array([0]))])
+        return retArray
+        '''
         for state in states:
             if len(retArray) == 0:
                 retArray = np.array([np.append(head, state)])
             else:
                 retArray = np.append(retArray, [np.append(head, state)], axis=0)
         return retArray
-    
+        '''
     for state in states:
         newhead = np.append(head, np.array([state]))
         if len(retArray) == 0:

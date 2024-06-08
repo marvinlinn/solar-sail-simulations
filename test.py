@@ -207,8 +207,8 @@ print(isinstance(sailset[0], body.CelestialBody))
 
 timetest = spice.Time(1, 1, 2000, 1200)
 targetbds = system.SolarSystem('targets', timetest).bodies
-sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6,-0.3, 0, 0.3, 0.6], 3, targetbds[2])
-print(sailset.shape)
+sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6,-0.3, 0, 0.3, 0.6], 4, targetbds[2])
+#print(sailset.shape)
 #print(sailset[0].yawAngle.shape)
 #print(sailset[0].timeSteps.shape)
 #print(sailset[0].locations.shape)
@@ -216,6 +216,8 @@ print(sailset.shape)
 #utils.animatebodies(np.append(sailset, bdys), tstep=10)
 pretrain.generateBodyCSV(sailset, target, numsails=3, simStartDate='testing')
 
+array = pretrain.permutationGenerator([1,2,3], 10)
+print(array)
 '''
 testing below
 
