@@ -3,7 +3,7 @@ import functions.system as system
 import functions.utils as utils
 import csv
 import os
-
+import stateCollection.spiceInterface as spice 
 #Pretraining Tools
 
 #generates a CSV of data which takes in a set of sails, and a target bd.
@@ -137,14 +137,7 @@ def permutationGenerator(states, length, head=np.array([])):
     if length == 1:
         retArray = np.array([np.append(head, np.array([0]))])
         return retArray
-        '''
-        for state in states:
-            if len(retArray) == 0:
-                retArray = np.array([np.append(head, state)])
-            else:
-                retArray = np.append(retArray, [np.append(head, state)], axis=0)
-        return retArray
-        '''
+    
     for state in states:
         newhead = np.append(head, np.array([state]))
         if len(retArray) == 0:
@@ -153,3 +146,19 @@ def permutationGenerator(states, length, head=np.array([])):
             retArray = np.append(retArray, permutationGenerator(states, length-1, newhead), axis=0)
 
     return retArray
+
+#dates = [month, day, year]
+#args = (length, sailOrientations, variations, numsails)
+#targetbd is manual changed
+def prepackagedWholeSim(dates, args):
+    print("prepacksim works")
+    timetest = spice.Time(dates[0], dates[1], dates[2], args[0])
+    targetbds = system.SolarSystem('targets', timetest).bodies
+    sailset, bdys, target = packaged2DSim(timetest, args[1], args[2], targetbds[4])
+    generateBodyCSV(sailset, target, args[3], simStartDate=str(dates[0])+str(dates[1])+str(dates[2]))
+    return 1
+
+def packagedSimForParallel(length, sailOrientations, variations, numsails, targetbd=[]):
+    def nested(month, day, year):
+        return prepackagedWholeSim(month, day, year, length, sailOrientations, variations, numsails)
+    return nested 
