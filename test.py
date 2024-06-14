@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import scipy.integrate as integ
 import stateCollection.spiceInterface as spice
 import functions.pretrainingfns as pretrain
+from multiprocessing import Pool
+import os
 
 #solar_system = system.SolarSystem("solar")
 #solar_system.animateBodies()
@@ -19,34 +21,6 @@ def testCone(t):
 
 span = np.arange(0, 3.2e7, 1e5)
 
-#sail = body.SolarSail("sail1", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[0.6, -0.6, 0]]))
-#sail2 = body.SolarSail("sail2", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[0.6, 0.6, 0.6]]))
-#sail3 = body.SolarSail("sail3", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[-0.6, -0.6, -0.6]]))
-#sail2ivp = body.SolarSail("sail2ivp", 0,0,0,0, np.array([[0,1.6e7,3.2e7],[0.6, -0.6, 0.6]]))
-
-#newsailLocs = integ.solve_ivp(utils.npSailODE, [0, 3.2e7], np.array([AU, 0, 0, 0, 30, 0]), rtol=1e-8,t_eval=span, args=[sail])
-#newsailLocs2 = integ.solve_ivp(utils.npSailODE,[0, 3.2e7], np.array([AU, 0, 0, 0, 30, 0]), rtol=1e-8,t_eval=span, args=[sail2])
-#newsailLocs3 = integ.solve_ivp(utils.npSailODE, [0, 3.2e7], np.array([AU, 0, 0, 0, 30, 0]),rtol=1e-8,t_eval=span, args=[sail3])
-
-
-#ivpsaillocs = integ.solve_ivp(utils.npSailGenerator, [0, 3.2e7], np.array([AU, 0, 0, 0, 30, 0]), rtol=1e-8, args=[sail2ivp], t_eval=span)
-#sail2ivp.locations = ivpsaillocs.y[:3, :]
-#print (sail2ivp.locations)
-#sail.locations = newsailLocs.y[:3,:]
-#sail2.locations = newsailLocs2.y[:3, :]
-#sail3.locations = newsailLocs3.y[:3, :]
-
-#print(np.array(newsailLocs).T[:3,:])
-#print(np.linalg.norm(np.array([1,1,1,1])))
-#plt.plot(saillocs.y[0], saillocs.y[1])
-#print(len(sail.locations[0]))
-#plt.show()
-#utils.animatebodies(np.append(solar_system.bodies), 15)
-
-#sail1 = utils.sailGenerator("sail1", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0, 2.6e6, 5.2e6, 7.8e6, 1.04e7,1.3e7,1.56e7, 1.82e7],[0.6, -0.6, 0]]), [0, 3.2e7], 1e5)
-#sail2 = utils.sailGenerator("sail2", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[-0.6, -0.6, 0]]), [0, 3.2e7], 1e5)
-#sail3 = utils.sailGenerator("sail3", np.array([AU,0,0]), np.array([0,30,0]), np.array([[0,1.6e7,3.2e7],[0.6, 0.6, 0]]), [0, 3.2e7], 1e5)
-#utils.animatebodies(np.array([sail1, sail2, sail3]))
 
 
 """
@@ -205,19 +179,53 @@ print(isinstance(sailset[0], body.CelestialBody))
 
 '''
 
-timetest = spice.Time(1, 1, 2000, 1200)
-targetbds = system.SolarSystem('targets', timetest).bodies
-sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6,-0.3, 0, 0.3, 0.6], 4, targetbds[2])
+#timetest = spice.Time(9, 1, 2000, 1200)
+#targetbds = system.SolarSystem('targets', timetest).bodies
+#sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 3, targetbds[4])
 #print(sailset.shape)
 #print(sailset[0].yawAngle.shape)
 #print(sailset[0].timeSteps.shape)
 #print(sailset[0].locations.shape)
 #print(bdys[0].locations.shape)
 #utils.animatebodies(np.append(sailset, bdys), tstep=10)
-pretrain.generateBodyCSV(sailset, target, numsails=3, simStartDate='testing')
+#pretrain.generateBodyCSV(sailset, target, numsails=10, simStartDate='09012000')
 
-array = pretrain.permutationGenerator([1,2,3], 10)
-print(array)
+#array = pretrain.permutationGenerator([1,2,3], 10)
+#print(array)
+
+dates = np.array([[1,1,2000], [3,1,2000], [6,1,2000], [9,1,2000], [1,1,2001]])
+
+fn = pretrain.packagedSimForParallel(1200, [0.6,0,-0.6], 2, 2)
+#fn(1,2,2000)
+
+def packagedSimForParallel(length, sailOrientations, variations, numsails, targetbd=[]):
+    def nested(month, day, year):
+        return pretrain.prepackagedWholeSim(month, day, year, length, sailOrientations, variations, numsails)
+    return nested
+
+fn = pretrain.prepackagedWholeSim
+
+def f(x, y, z):
+    return x*y*z
+
+if __name__ == '__main__':
+    with Pool(os.cpu_count()) as pool:         # start 4 worker processes
+        res = [pool.apply_async(fn, [date,(1200,[0.6,0,-0.6],2,2)]) for date in dates]
+        print([r.get() for r in res])
+    '''
+        result = pool.apply_async(f, (10,)) # evaluate "f(10)" asynchronously in a single process
+        print(result.get())        # prints "100" unless your computer is *very* slow
+
+        print(pool.map(f, range(10)))       # prints "[0, 1, 4,..., 81]"
+
+        it = pool.imap(f, range(10))
+        print(next(it))                     # prints "0"
+        print(next(it))                     # prints "1"
+        print(it.next(timeout=1))           # prints "4" unless your computer is *very* slow
+
+        result = pool.apply_async(time.sleep, (10,))
+        print(result.get(timeout=1))        # raises multiprocessing.TimeoutError
+        '''
 '''
 testing below
 
