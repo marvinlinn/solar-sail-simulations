@@ -1,8 +1,8 @@
-import rl_agent.World
+import os
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 import tensorflow_probability as tfp
+import tensorflow as tf
 
 from rich.progress import track
 import multiprocessing
@@ -192,39 +192,64 @@ class ParallelAgent(Agent):
         print(f'mean: {r_total/max_duration}, r: {r_total}, md: {max_duration}')
         return r_total/max_duration, all_S
 
-    def _pretrain_SAR_iterator(self, files, batch_size, load_threshold=2):
+    def _pretrain_SAR_iterator(self, dirs, batch_size, load_threshold=2):
         # TODO: untested! also maybe shuffle? NEED EVAL METRIC FOR OVERFIT
-        def get_SAR(file, queue=None):
-            df = pd.read_csv(file)
-            S = df[['sail_x']] # TODO: get real cols
-            A = df[['yaw']]
-            R = 1 / np.array(df[['dist2']])
+        def get_SAR(file, target_df, queue=None):
+            df = pd.read_csv(file, delimiter='|')
+            print(df)
+            print(queue)
+            S = np.copy(np.array(df[['sail x', 'sail y', 'sail z', 
+                             'sail Vx', 'sail Vy', 'sail Vz']]))
+            A = np.copy(np.array(df[['yaw']]))
+            R = 1 / np.array(df[['abs distance']])
+            res = (S,A,R)
             if queue is not None:
-                queue.put((S, A, R))
-            return S, A, R
-
-        queue = multiprocessing.Queue()
-        p = None
-
-        for file_i, file in enumerate(files):
-            if p is None:
-                S, A, R = get_SAR(file)
+                queue.put(res)
             else:
-                p.join(timeout=0)
-                if p.is_alive():
-                    print('SAR not ready! increasing load threshold')
-                    load_threshold += 1
-                p.join()
-                S, A, R = queue.get()
-                p = None
-
+                return res
+        
+        def SAR_batches(S,A,R,p=None):
             no_batches = -(len(S) // -batch_size)
             for i in range(no_batches):
-                if p is None and i >= no_batches - load_threshold:
-                    p = Process(target=get_SAR, args=(file, queue))
-                    p.start()
+                if p is not None and \
+                  p[0] is None and \
+                  i >= no_batches - load_threshold:
+                    p[0] = Process(target=get_SAR, 
+                                   args=(dir + file, target_df), 
+                                   kwargs={'queue': queue})
+                    p[0].start()
+                    print(p[0])
+
                 end = min(i+batch_size, len(S))
                 yield S[i:end], A[i:end], R[i:end]
+
+        queue = multiprocessing.Queue(maxsize=2)
+        p = [None]
+
+        for dir in dirs:
+            target_df = pd.read_csv(dir + 'target.csv', delimiter='|')
+            files = os.listdir(dir)
+            for file_i, file in enumerate(files):
+                if file == 'target.csv':
+                    continue
+                if p[0] is None:
+                    S, A, R = get_SAR(dir + file, target_df)
+                else:
+                    # if p[0].is_alive():
+                    #     print('SAR not ready! increasing load threshold')
+                    #     load_threshold += 1
+                    print(p[0])
+                    p[0].join()
+                    print('ASJLJSDALKJ')
+                    S, A, R = queue.get()
+                    p[0] = None
+
+                yield from SAR_batches(S,A,R, p=p)
+
+            if p[0] is not None:
+                p[0].join()
+                S, A, R = queue.get()
+                yield from SAR_batches(S,A,R)
 
     def pretrain(self, batch_size=1024, epochs=5):
         for epoch in range(epochs):
