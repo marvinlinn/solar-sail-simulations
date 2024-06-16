@@ -181,7 +181,7 @@ print(isinstance(sailset[0], body.CelestialBody))
 
 #timetest = spice.Time(9, 1, 2000, 1200)
 #targetbds = system.SolarSystem('targets', timetest).bodies
-#sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 3, targetbds[4])
+#sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 2, targetbds[4])
 #print(sailset.shape)
 #print(sailset[0].yawAngle.shape)
 #print(sailset[0].timeSteps.shape)
@@ -195,37 +195,32 @@ print(isinstance(sailset[0], body.CelestialBody))
 
 dates = np.array([[1,1,2000], [3,1,2000], [6,1,2000], [9,1,2000], [1,1,2001]])
 
-fn = pretrain.packagedSimForParallel(1200, [0.6,0,-0.6], 2, 2)
+#fn = pretrain.packagedSimForParallel(1200, [0.6,0,-0.6], 2, 2)
 #fn(1,2,2000)
-
-def packagedSimForParallel(length, sailOrientations, variations, numsails, targetbd=[]):
-    def nested(month, day, year):
-        return pretrain.prepackagedWholeSim(month, day, year, length, sailOrientations, variations, numsails)
-    return nested
-
-fn = pretrain.prepackagedWholeSim
+#fn = pretrain.prepackagedWholeSim
 
 def f(x, y, z):
     return x*y*z
 
+def g(x):
+    return x**2
+
+
+#pretrain.parallelsiming(dates, [0.6,0,-0.6], 3, 3, 1200)
+
+
+if __name__ == '__main__':
+    with Pool(os.cpu_count()) as pool:         # start 4 worker processes
+        res = [pool.apply_async(g, [x]) for x in [1,2,3,4]]
+        a = [r.get() for r in res]
+        print(a)
+
+'''
 if __name__ == '__main__':
     with Pool(os.cpu_count()) as pool:         # start 4 worker processes
         res = [pool.apply_async(fn, [date,(1200,[0.6,0,-0.6],2,2)]) for date in dates]
-        print([r.get() for r in res])
-    '''
-        result = pool.apply_async(f, (10,)) # evaluate "f(10)" asynchronously in a single process
-        print(result.get())        # prints "100" unless your computer is *very* slow
-
-        print(pool.map(f, range(10)))       # prints "[0, 1, 4,..., 81]"
-
-        it = pool.imap(f, range(10))
-        print(next(it))                     # prints "0"
-        print(next(it))                     # prints "1"
-        print(it.next(timeout=1))           # prints "4" unless your computer is *very* slow
-
-        result = pool.apply_async(time.sleep, (10,))
-        print(result.get(timeout=1))        # raises multiprocessing.TimeoutError
-        '''
+        a = [r.get() for r in res]
+'''
 '''
 testing below
 

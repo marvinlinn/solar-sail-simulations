@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 import numpy as np
 import functions.system as system
 import functions.utils as utils
@@ -155,10 +156,16 @@ def prepackagedWholeSim(dates, args):
     timetest = spice.Time(dates[0], dates[1], dates[2], args[0])
     targetbds = system.SolarSystem('targets', timetest).bodies
     sailset, bdys, target = packaged2DSim(timetest, args[1], args[2], targetbds[4])
-    generateBodyCSV(sailset, target, args[3], simStartDate=str(dates[0])+str(dates[1])+str(dates[2]))
+    generateBodyCSV(sailset, target, simStartDate=str(dates[0])+str(dates[1])+str(dates[2]), numsails=args[3])
     return 1
 
 def packagedSimForParallel(length, sailOrientations, variations, numsails, targetbd=[]):
     def nested(month, day, year):
         return prepackagedWholeSim(month, day, year, length, sailOrientations, variations, numsails)
     return nested 
+
+def parallelsiming(dates, sailOrientations, variations, numsails, length):
+    if __name__ == '__main__':
+        with Pool(os.cpu_count()) as pool:         # start 4 worker processes
+            res = [pool.apply_async(prepackagedWholeSim, [date,(length,sailOrientations,variations,numsails)]) for date in dates]
+            print([r.get() for r in res])

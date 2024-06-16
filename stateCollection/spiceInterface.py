@@ -32,7 +32,7 @@ Integer[] velocities - An array of velocity magnitudies with given step sizes wi
 '''
 def requestData(spkid, Time, step):
     saveFile = './data/save.npy'
-    existingSPK = np.load(saveFile)
+    existingSPK = np.load(saveFile, allow_pickle=True)
     existingSPK = checkSPK(spkid, existingSPK)
 
     np.save(saveFile, existingSPK)
