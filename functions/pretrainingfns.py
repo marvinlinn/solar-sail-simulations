@@ -95,14 +95,14 @@ def calculateExtraData(sailSet, targetbd):
 
 #for n different sail orientations and m different points to change sail orientation, n^m sails are generated
 #targetbd will be replaced with a neo body, for testing purposes we're gonna just use a planet so target bd will be an index in SolarSystem
-def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
-    timeSeconds = simTime.lengthSeconds
+def largeScaleSailGenerator(simTime, sailorientations, numsailchanges, targetbd, numSteps, Earth):
+    timeSeconds = simTime
 
     #planet generation
-    sysname = str(simTime.length) + " day sys"
-    sys = system.SolarSystem(sysname, simTime)
-    sysbds = sys.bodies
-    numSteps = len(sysbds[0].locations[0])
+    #sysname = str(simTime.length) + " day sys"
+    #sys = system.SolarSystem(sysname, simTime)
+    #sysbds = sys.bodies
+    #numSteps = len(sysbds[0].locations[0])
 
 
     #trajectories generation
@@ -114,8 +114,8 @@ def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
 
     #sail generation
     #init conditions -> earth position, velocity must also be vectorized correctly
-    initPos = sysbds[3].locations.T[0]
-    initVelVec = (sysbds[3].locations.T[1]-sysbds[3].locations.T[0])/np.linalg.norm(sysbds[3].locations.T[1]-sysbds[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
+    initPos = Earth.locations.T[0]
+    initVelVec = (Earth.locations.T[1]-Earth.locations.T[0])/np.linalg.norm(Earth.locations.T[1]-Earth.locations.T[0]) #velocity vector via linearization between point 0 and 1
     initVel = initVelVec * 30
     sailset = np.array([])
 
@@ -128,7 +128,7 @@ def packaged2DSim(simTime, sailorientations, numsailchanges, targetbd):
 
     #simset = np.append(sailset, sysbds)
     
-    return sailset, sysbds, targetbd
+    return sailset, targetbd
 
 #generates an array filled with all possible state combinations for a given length
 #recursive -> head is passing the already determined pieces down the recursion
@@ -154,8 +154,9 @@ def permutationGenerator(states, length, head=np.array([])):
 def prepackagedWholeSim(dates, args):
     print("prepacksim works")
     timetest = spice.Time(dates[0], dates[1], dates[2], args[0])
-    targetbds = system.SolarSystem('targets', timetest).bodies
-    sailset, bdys, target = packaged2DSim(timetest, args[1], args[2], targetbds[4])
+    targetSystem = system.SolarSystem('targets', timetest)
+    targetBodies = targetSystem.bodies
+    sailset, target = largeScaleSailGenerator(timetest.lengthSeconds, args[1], args[2], targetBodies[4], len(targetBodies[0].locations[0]), Earth=targetBodies[3])
     generateBodyCSV(sailset, target, simStartDate=str(dates[0])+str(dates[1])+str(dates[2]), numsails=args[3])
     return 1
 
@@ -164,8 +165,50 @@ def packagedSimForParallel(length, sailOrientations, variations, numsails, targe
         return prepackagedWholeSim(month, day, year, length, sailOrientations, variations, numsails)
     return nested 
 
-def parallelsiming(dates, sailOrientations, variations, numsails, length):
-    if __name__ == '__main__':
-        with Pool(os.cpu_count()) as pool:         # start 4 worker processes
-            res = [pool.apply_async(prepackagedWholeSim, [date,(length,sailOrientations,variations,numsails)]) for date in dates]
-            print([r.get() for r in res])
+# In the future make it possible to set target to a body then search spice
+def parallelsiming(dates, sailOrientations, numSailChanges, numsails, length, target=''):
+    
+    # loop through every date instance and conduct parallel computing in order to solve all the sails
+    for date in dates:
+        #setup system generation
+        timetest = spice.Time(date[0], date[1], date[2], length)
+        targetSystem = system.SolarSystem('targets', timetest)
+        targetBodies = targetSystem.bodies
+        numSymSteps = len(targetBodies[0].locations[0])
+        timeSeconds = timetest.lengthSeconds
+
+        targetbd = targetBodies[4]
+
+        #trajectories generation
+        pitches = np.zeros(numSailChanges+1)
+        yaws = permutationGenerator(sailOrientations, numSailChanges+1)
+        timeInt = np.zeros(numSailChanges+1)
+        for n in range(numSailChanges+1):
+            timeInt[n] = n * (timetest.lengthSeconds/numSailChanges)
+
+        #sail generation
+        #init conditions -> earth position, velocity must also be vectorized correctly
+        initPos = targetBodies[3].locations.T[0]
+        initVelVec = (targetBodies[3].locations.T[1]-targetBodies[3].locations.T[0])/np.linalg.norm(targetBodies[3].locations.T[1]-targetBodies[3].locations.T[0]) #velocity vector via linearization between point 0 and 1
+        initVel = initVelVec * 30
+        sailset = np.array([])
+
+        if __name__ == '__main__':
+            with Pool(os.cpu_count()) as pool:         # start 4 worker processes
+                for n in range(len(yaws)):
+                    args = (("sail "+ str(n)), initPos, initVel,
+                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSymSteps, [targetbd])
+                    res = pool.apply_async(utils.parallelSailGenerator, args)
+                    sailset = np.append(sailset, res)
+            generateBodyCSV(sailset, targetbd, filename="sails_traj_data", numsails=numsails, simStartDate='09012000')
+        else:
+            print('not parallel')
+
+def func(x):
+    return x**2
+
+def paralleltesting(x):
+    with Pool(os.cpu_count()) as pool:
+        out = [pool.apply_async(func, [val]) for val in x]
+        vals = [v.get() for v in out]
+    return vals

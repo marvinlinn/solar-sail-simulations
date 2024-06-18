@@ -210,10 +210,13 @@ def g(x):
 
 
 if __name__ == '__main__':
-    with Pool(os.cpu_count()) as pool:         # start 4 worker processes
-        res = [pool.apply_async(g, [x]) for x in [1,2,3,4]]
-        a = [r.get() for r in res]
-        print(a)
+    #with Pool(os.cpu_count()) as pool:         # start 4 worker processes
+      #  res = [pool.apply_async(g, [x]) for x in [1,2,3,4]]
+       # a = [r.get() for r in res]
+       # print(a)
+    
+    array = pretrain.paralleltesting([1,2,3,4,5,6])
+    print(array)
 
 '''
 if __name__ == '__main__':

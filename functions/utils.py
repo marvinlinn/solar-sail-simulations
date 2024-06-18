@@ -208,6 +208,18 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
         newSail.yawAngle[n] = coneAngle(newSail.timeSpan[n],[0])[0]
     return newSail
 
+def parallelSailGenerator(args):
+    
+    name = args[0]
+    initLoc = args[1]
+    initVel = args[2]
+    trajectory = args[3]
+    timeInterval = args[4]
+    numsteps = args[5]
+    bodies = args[6]
+
+    return sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bodies)
+
 #another implementation used for odeint based systems
 '''
 def npODESailGenerator(s, t, sail):
