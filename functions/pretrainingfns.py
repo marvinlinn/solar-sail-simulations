@@ -95,14 +95,14 @@ def calculateExtraData(sailSet, targetbd):
 
 #for n different sail orientations and m different points to change sail orientation, n^m sails are generated
 #targetbd will be replaced with a neo body, for testing purposes we're gonna just use a planet so target bd will be an index in SolarSystem
-def largeScaleSailGenerator(simTime, sailorientations, numsailchanges, targetbd, numSteps, Earth):
-    timeSeconds = simTime
+def largeScaleSailGenerator(simTime, sailorientations, numsailchanges, targetbd=[]):
 
     #planet generation
-    #sysname = str(simTime.length) + " day sys"
-    #sys = system.SolarSystem(sysname, simTime)
-    #sysbds = sys.bodies
-    #numSteps = len(sysbds[0].locations[0])
+    sysname = str(simTime.length) + " day sys"
+    sys = system.SolarSystem(sysname, simTime)
+    sysbds = sys.bodies
+    numSteps = len(sysbds[0].locations[0])
+    timeSeconds = simTime
 
 
     #trajectories generation
@@ -123,7 +123,7 @@ def largeScaleSailGenerator(simTime, sailorientations, numsailchanges, targetbd,
 
     for n in range(len(yaws)):
         newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
-                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps, bodies=[targetbd])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
+                                  np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps, bodies=[sysbds[4]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
         sailset = np.append(sailset, newSail)
 
     #simset = np.append(sailset, sysbds)
