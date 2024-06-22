@@ -130,7 +130,11 @@ def npSailODE(s, t, sail): # s and t are switched for temporary ODE
 
 # may be used to include bodies gravity if necessary, bodies -> array with planets and NEOs, currently bodies will only contain the trajectory target
 def npSailODEwithBodies(s, t, sail, bodies):
-    coneAngle = sail.coneAngle(t, s) #coneAngle is going to be a tuple with a "yaw" and "pitch" component
+    #coneAngle = sail.coneAngle(t, s) #coneAngle is going to be a tuple with a "yaw" and "pitch" component
+    
+    yaw = mpCone_Angle_Factory(sail.timeInt, sail.yaws, t)
+    pitch = mpCone_Angle_Factory(sail.timeInt, sail.pitches, t)
+
     #print(f'cone: {coneAngle}')
     r = np.array([s[0], s[1], s[2]])
     v = np.array([s[3], s[4], s[5]])
@@ -147,8 +151,8 @@ def npSailODEwithBodies(s, t, sail, bodies):
     rplanar = np.matmul(sail.initMatrix, r)
     theta = math.atan2(rplanar[1], rplanar[0])
     phi = math.atan2(rplanar[2], np.sqrt(rplanar[1]**2 + rplanar[0]**2))
-    asailMag = (beta * mu / np.dot(rplanar, rplanar) * (np.cos(coneAngle[0]) ** 2) * (np.cos(coneAngle[1]) ** 2))
-    asailNorm = np.array([np.cos(coneAngle[1] + phi)*np.cos(coneAngle[0] + theta), np.cos(coneAngle[1] + phi)*np.sin(coneAngle[0]+theta), np.sin(coneAngle[1] + phi)])
+    asailMag = (beta * mu / np.dot(rplanar, rplanar) * (np.cos(yaw) ** 2) * (np.cos(pitch) ** 2))
+    asailNorm = np.array([np.cos(pitch + phi)*np.cos(yaw + theta), np.cos(pitch + phi)*np.sin(yaw+theta), np.sin(pitch + phi)])
     asailplanar = asailMag * asailNorm
     asail = np.matmul(sail.invMatrix, asailplanar)
 
@@ -177,6 +181,10 @@ def cone_angle_factory(t_thresholds, yaws, pitches):
 
     return cone_angle
 
+def mpCone_Angle_Factory(t_thresholds, yaws, t):
+    ind = np.searchsorted(t_thresholds, t, side='right')
+    return yaws[ind-1]
+
 # sail creator, creates a sail object and solves the trajectory
 # TODO: ngl I think the term trajectory could be a bit confusing since we are 
 # controlling the trajectory of the inputs not the actual path of the spacecraft
@@ -190,7 +198,9 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
     initMatrix = [er, ev, eb]
     
     coneAngle = cone_angle_factory(trajectory[0], trajectory[1], trajectory[2])
-    newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
+    #newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
+    newSail = body.SolarSail(name, initLoc, initVel, 0, trajectory[1], trajectory[0], pitchAngle=trajectory[2], path_style='trail', show_traj=False, initMatrix=initMatrix)
+
     span = np.linspace(timeInterval[0], timeInterval[1], int(numsteps))
     initialconditions =np.append(initLoc, initVel)
    

@@ -179,7 +179,6 @@ print(isinstance(sailset[0], body.CelestialBody))
 
 '''
 
-timetest = spice.Time(9, 1, 2000, 1200)
 #targetbds = system.SolarSystem('targets', timetest).bodies
 #sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 2, targetbds[4])
 #print(sailset.shape)
@@ -205,7 +204,7 @@ def f(x, y, z):
 def g(x):
     return x**2
 
-
+#print(utils.mpCone_Angle_Factory([2,4,6,8], [1,2,3,4], 8))
 #pretrain.parallelsiming(dates, [0.6,0,-0.6], 3, 3, 1200)
 
 
@@ -214,11 +213,13 @@ if __name__ == '__main__':
       #  res = [pool.apply_async(g, [x]) for x in [1,2,3,4]]
        # a = [r.get() for r in res]
        # print(a)
+    timetest = spice.Time(9, 1, 2000, 1200)
     targetbds = system.SolarSystem('targets', timetest).bodies
-    sailset, bdys, target = pretrain.largeScaleSailGenerator(360, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 2, targetbds[4])
-    pretrain.generateBodyCSV(sailset, target, numsails=10, simStartDate='09012000')
-    array = pretrain.paralleltesting([1,2,3,4,5,6])
-    print(array)
+    sailset, target = pretrain.largeScaleSailGenerator(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 2, targetbds[4], isParallel=False)
+    pretrain.generateBodyCSV(sailset, target, numsails=10, simStartDate='09012222')
+    print("hello")
+    #array = pretrain.paralleltesting([1,2,3,4,5,6])
+    #print(array)
 
 '''
 if __name__ == '__main__':

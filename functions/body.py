@@ -103,8 +103,8 @@ class SatelliteBody(Body):
 class SolarSail(SatelliteBody):
 
     #includes the angles of the solar sail in order to determine solar sail acceleration
-    def __init__(self, name, position, velocity, acceleration, yawAngle, 
-                 coneAngle, initMatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]), pitchAngle=0, rollAngle=0, opacity=.5, 
+    def __init__(self, name, position, velocity, acceleration, yawAngle, timeInt, 
+                 coneAngle='', initMatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]), pitchAngle=0, rollAngle=0, opacity=.5, 
                  path_style='past', trail_length=75, show_traj=False, marker=',', dispSize=1):
         self.mass = 0.01 #10 gram mass
         self.sailArea = 1 #1 sq meter sail area
@@ -118,6 +118,11 @@ class SolarSail(SatelliteBody):
         self.yawAngle = yawAngle #degrees relative to the velocity vector & rollAngle, Will be OVERWRITTEN with angles present during timesteps
         self.pitchAngle = pitchAngle #degrees relative to the velocity vector & rollAngle
         self.rollAngle = rollAngle #degrees, 0 means in the same plane as the orbit of the planets
+        
+        # for new coneangle determination (NOT cone angle factory)
+        self.timeInt = timeInt
+        self.yaws = yawAngle
+        self.pitches = pitchAngle
         
         self.coneAngle = coneAngle # function mapping (t,s) -> angle
         self.currStep = 0 # current step in the trajectory
