@@ -210,18 +210,26 @@ def parallelsiming(dates, sailOrientations, numSailChanges, numsails, length, ta
             print('not parallel')
  
 
+# Generates a bunch of sails in parallel 
 def parallelSailGeneration(initPos, initVel, timeInt, yaws, pitches, timeSeconds, numSymSteps, targetbd=[]):
     
     argSet = [[("sail "+ str(n)), initPos, initVel,
                     np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSymSteps, [targetbd]] for n in range(len(yaws))]
 
-    
-    # sailset = [utils.parallelSailGenerator(args) for args in argSet]       
-
     with Pool(os.cpu_count()) as pool:         
         sails = [pool.apply_async(utils.parallelSailGenerator, [args]) for args in argSet]
         sailset = [sail.get() for sail in sails]
     return sailset
+
+# Generates a bunch of sails for a bunch of different dates, stores them in seperate CSV directories
+# dates = [[month,day,year,lengthDays],[month,day,year,lengthDays],[month,day,year,lengthDays], ...]
+def multiSailSetGenerator(dates, sailOrientations, numChanges):
+    for date in dates:
+        timeInstance = spice.Time(date[0], date[1], date[2], date[3])
+        targetbds = system.SolarSystem('targets', timeInstance).bodies
+        target = targetbds[4]
+        sailset, target = largeScaleSailGenerator(timeInstance, sailOrientations, numChanges, target, isParallel=True)
+        generateBodyCSV(sailset, target, numsails=5, simStartDate=str(date[0]) + str(date[1]) + str(date[2]))
             
 
 ''' Parallel Example '''
