@@ -200,12 +200,36 @@ print(isinstance(sailset[0], body.CelestialBody))
 #print(utils.mpCone_Angle_Factory([2,4,6,8], [1,2,3,4], 8))
 #pretrain.parallelsiming(dates, [0.6,0,-0.6], 3, 3, 1200)
 
+def generatePartitions(numObj, numCategories, head=np.array([0])):
+    superArray = np.array([])
+    if numCategories == 1:
+        num = numObj
+        if len(head) != 0:
+            num = numObj + head[-1]
+        retArray = np.array([np.append(head, np.array([num]))])
+        print(retArray)
+        return retArray
+    else:
+        for n in range(numObj+1):
+            num = n
+            if len(head) != 0:
+                num = num + head[-1]
+            newhead = np.append(head, np.array([num]))
+            newArray = generatePartitions(numObj-n, numCategories-1, head=newhead) 
+            if len(superArray) == 0:
+                superArray = newArray
+            else:
+                superArray = np.append(superArray,newArray, axis=0)
+        return superArray
+
 
 if __name__ == '__main__':
-    dates = np.array([[1,1,2000,360], [3,1,2000,360], [6,1,2000,360], [9,1,2000,360], [1,1,2001,360]])
-    sailOrientations = [-0.6,-0.3,0,0.3,0.6]
-    numSailChanges = 3
-    pretrain.multiSailSetGenerator(dates,sailOrientations,numSailChanges)
+    #dates = np.array([[5,17,2001,360], [5,20,2001,360]])
+    #sailOrientations = [-0.6,0,0.6]
+    #numSailChanges = 12
+    #pretrain.multiSailSetGenerator(dates,sailOrientations,numSailChanges)
+    print(generatePartitions(3, 3))
+    print(np.searchsorted([1,3,3,5,9], 3, side='right'))
 
    
 

@@ -181,6 +181,7 @@ def cone_angle_factory(t_thresholds, yaws, pitches):
 
     return cone_angle
 
+# Cone Angle Factory replacement because the mp system didn't like our nexted function
 def mpCone_Angle_Factory(t_thresholds, yaws, t):
     ind = np.searchsorted(t_thresholds, t, side='right')
     return yaws[ind-1]
