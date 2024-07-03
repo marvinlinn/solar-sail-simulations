@@ -179,9 +179,8 @@ print(isinstance(sailset[0], body.CelestialBody))
 
 '''
 
-#timetest = spice.Time(9, 1, 2000, 1200)
 #targetbds = system.SolarSystem('targets', timetest).bodies
-#sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 3, targetbds[4])
+#sailset, bdys, target = pretrain.packaged2DSim(timetest, [-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6], 2, targetbds[4])
 #print(sailset.shape)
 #print(sailset[0].yawAngle.shape)
 #print(sailset[0].timeSteps.shape)
@@ -193,40 +192,49 @@ print(isinstance(sailset[0], body.CelestialBody))
 #array = pretrain.permutationGenerator([1,2,3], 10)
 #print(array)
 
-dates = np.array([[1,1,2000], [3,1,2000], [6,1,2000], [9,1,2000], [1,1,2001]])
 
-fn = pretrain.packagedSimForParallel(1200, [0.6,0,-0.6], 2, 2)
+#fn = pretrain.packagedSimForParallel(1200, [0.6,0,-0.6], 2, 2)
 #fn(1,2,2000)
+#fn = pretrain.prepackagedWholeSim
 
-def packagedSimForParallel(length, sailOrientations, variations, numsails, targetbd=[]):
-    def nested(month, day, year):
-        return pretrain.prepackagedWholeSim(month, day, year, length, sailOrientations, variations, numsails)
-    return nested
+#print(utils.mpCone_Angle_Factory([2,4,6,8], [1,2,3,4], 8))
+#pretrain.parallelsiming(dates, [0.6,0,-0.6], 3, 3, 1200)
 
-fn = pretrain.prepackagedWholeSim
+def generatePartitions(numObj, numCategories, head=np.array([0])):
+    superArray = np.array([])
+    if numCategories == 1:
+        num = numObj
+        if len(head) != 0:
+            num = numObj + head[-1]
+        retArray = np.array([np.append(head, np.array([num]))])
+        print(retArray)
+        return retArray
+    else:
+        for n in range(numObj+1):
+            num = n
+            if len(head) != 0:
+                num = num + head[-1]
+            newhead = np.append(head, np.array([num]))
+            newArray = generatePartitions(numObj-n, numCategories-1, head=newhead) 
+            if len(superArray) == 0:
+                superArray = newArray
+            else:
+                superArray = np.append(superArray,newArray, axis=0)
+        return superArray
 
-def f(x, y, z):
-    return x*y*z
 
 if __name__ == '__main__':
-    with Pool(os.cpu_count()) as pool:         # start 4 worker processes
-        res = [pool.apply_async(fn, [date,(1200,[0.6,0,-0.6],2,2)]) for date in dates]
-        print([r.get() for r in res])
+    #dates = np.array([[5,17,2001,360], [5,20,2001,360]])
+    #sailOrientations = [-0.6,0,0.6]
+    #numSailChanges = 12
+    #pretrain.multiSailSetGenerator(dates,sailOrientations,numSailChanges)
+    print(generatePartitions(3, 3))
+    print(np.searchsorted([1,3,3,5,9], 3, side='right'))
+
+   
+
+
     '''
-        result = pool.apply_async(f, (10,)) # evaluate "f(10)" asynchronously in a single process
-        print(result.get())        # prints "100" unless your computer is *very* slow
-
-        print(pool.map(f, range(10)))       # prints "[0, 1, 4,..., 81]"
-
-        it = pool.imap(f, range(10))
-        print(next(it))                     # prints "0"
-        print(next(it))                     # prints "1"
-        print(it.next(timeout=1))           # prints "4" unless your computer is *very* slow
-
-        result = pool.apply_async(time.sleep, (10,))
-        print(result.get(timeout=1))        # raises multiprocessing.TimeoutError
-        '''
-'''
 testing below
 
 trajectory = np.array([[0, 5, 10, 16, 20],[1, 2, 3, 4, 5]])
