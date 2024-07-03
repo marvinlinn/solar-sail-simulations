@@ -118,19 +118,30 @@ class ParallelAgent(Agent):
         super().__init__(world, policy, Q, learning_rate_policy, 
                          learning_rate_Q, decay_rate)
 
-    def train(self, max_duration, episodes_per_epoch, epochs):
+    def train(self, max_duration, episodes_per_epoch, epochs, added_uncertainty=0):
         r_mean = 0
         states = None
-        for epoch in range(episodes_per_epoch):
-            for cycle in track(range(episodes_per_epoch), description=f'Epoch {epoch}'):
-                r_mean, states = self.training_step(max_duration)
-            print(f'epoch {epoch}: Mean Reward = {r_mean}')
+        for epoch in range(epochs):
+            self.policy.save_weights('./checkpoints/policy.weights.h5')
+            self.Q.save_weights('./checkpoints/Q.weights.h5')
+            for cycle in track(range(episodes_per_epoch), 
+                               description=f'Epoch {epoch}'):
+                u = added_uncertainty
+                if callable(added_uncertainty):
+                    u = added_uncertainty(epoch, cycle)
+                r_mean, states = self.training_step(max_duration, 
+                                                    added_uncertainty=u)
+            print(f'epoch {epoch}: Mean Reward = {np.mean(r_mean)}')
         return states
 
-    def training_step(self, max_duration):
+    def training_step(self, max_duration, added_uncertainty=0):
         R_total = np.zeros((self.world.num_sails, 1))
         all_S = []
-        S = self.world.reset()
+        
+        year = np.random.randint(2000, 2020)
+        month = np.random.randint(1,12)
+        day = np.random.randint(1,28)
+        S = self.world.reset(new_t0=(month, day, year))
 
         with tf.GradientTape() as policy_tape:
             mu, sigma = self.policy(S)
@@ -155,6 +166,7 @@ class ParallelAgent(Agent):
             # sample next action from policy
             with tf.GradientTape() as policy_tape_next:
                 mu, sigma = self.policy(S)
+                sigma += added_uncertainty
                 normal = tfp.distributions.Normal(mu, sigma)
                 A_next = normal.sample()
                 log_prob_next = normal.log_prob(A_next)
@@ -164,8 +176,10 @@ class ParallelAgent(Agent):
                 policy_grad_target = self.learning_rate_policy * Q_SA * log_prob
             policy_grads = policy_tape.gradient(policy_grad_target, 
                                                 self.policy.trainable_variables)
-            self.p_optimizer.apply_gradients(zip(policy_grads, 
-                                                 self.policy.trainable_variables))
+            print(f'pi nan printing... {sigma}') if any([np.isnan(a).any() for a in policy_grads]) else None
+            if not any([tf.math.reduce_any(tf.math.is_nan(a)) for a in policy_grads]):
+                self.p_optimizer.apply_gradients(zip(policy_grads, 
+                                                     self.policy.trainable_variables))
 
             # compute TD error
             SA_next = np.hstack((S_next, A_next))
@@ -175,21 +189,28 @@ class ParallelAgent(Agent):
             with Q_tape:
                 Q_grad_target = self.learning_rate_Q * td_error.numpy() * Q_SA # TODO: confirm td error not differentiated
             Q_grads = Q_tape.gradient(Q_SA, self.Q.trainable_variables)
+            [print(f'Q nan printing...') if np.isnan(a).any() else None for a in Q_grads]
 
             # update weights of Q: w += alpha * delta * grad Q(s,a)
-            self.q_optimizer.apply_gradients(zip(Q_grads, 
-                                                 self.Q.trainable_variables))
+            if not any([tf.math.reduce_any(tf.math.is_nan(a)) for a in Q_grads]):
+                self.q_optimizer.apply_gradients(zip(Q_grads, 
+                                                     self.Q.trainable_variables))
 
             # advance s and a TODO: confirm all vars prop correctly
             # a, a_raw, log_prob = a_next, a_next_raw, log_prob_next
             A, log_prob = A_next, log_prob_next
             S = S_next
+
+            del policy_tape
             policy_tape = policy_tape_next
+
             Q_SA = Q_SA_next
+            
+            del Q_tape
             Q_tape = Q_tape_next
 
-        r_total = np.sum(R_total, axis=0)
-        print(f'mean: {r_total/max_duration}, r: {r_total}, md: {max_duration}')
+        r_total = np.sum(R_total, axis=1)
+        print(f'mean: {np.mean(r_total/max_duration)}, r: {np.mean(r_total)}, md: {max_duration}')
         return r_total/max_duration, all_S
 
     def _pretrain_SAR_iterator(self, dirs, batch_size, load_threshold=2):

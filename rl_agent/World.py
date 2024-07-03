@@ -66,12 +66,12 @@ class ParallelTrackNEO(ParallelWorld):
     #   Uranus:  mu = 5.7939399e15      / 1e9,
     #   Neptune: mu = 6.8365299e15      / 1e9 ]
 
-    def __init__(self, num_sails=50, dt=5, control_interval=1):
+    def __init__(self, num_sails=50, dt=5, control_interval=5):
         self.time = {'get pos': 0, 'square dists': 0, 'grav accel': 0, 'sail accel': 0, 'update': 0}
 
         self.num_sails = num_sails
-        dt_hours = dt
-        self.dt = dt_hours * 3600
+        self.dt_hours = dt
+        self.dt = self.dt_hours * 3600
         self.control_interval=control_interval
 
         self.bodies = {}
@@ -91,7 +91,7 @@ class ParallelTrackNEO(ParallelWorld):
                                       6.8365299e15      / 1e9])
 
         # TODO: REMOVE THIS BLOCK TO CONSIDER ALL PLANETS
-        selected = ['Sun', 'Jupiter']
+        selected = ['Sun', 'Mars']
         indices = [i for i in range(len(self.bodies['name'])) 
                    if self.bodies['name'][i] in selected]
         self.bodies = {key: self.bodies[key][indices] for key in self.bodies.keys()}
@@ -101,14 +101,14 @@ class ParallelTrackNEO(ParallelWorld):
         self.num_bodies = len(self.bodies['name'])
         timeObj = spice.Time(1, 1, 2000, 360) # jan 01, 2000, 360 days
         self.bodies['positions'] = \
-                np.array([spice.requestData(spkid, timeObj, dt_hours)[0].T 
+                np.array([spice.requestData(spkid, timeObj, self.dt_hours)[0].T 
                           for spkid in self.bodies['spkid']])
 
         self.bodies['positions'] = np.transpose(self.bodies['positions'], 
                                                 axes=(1,0,2))
 
         # TODO: SKETCHY DEFAULT INITIAL CONDITIONS FROM TEST.PY
-        earth_pos = spice.requestData('3', timeObj, dt_hours)[0].T
+        earth_pos = spice.requestData('3', timeObj, self.dt_hours)[0].T
         self.init_pos = earth_pos[0]
         normalize = lambda a: a / np.linalg.norm(a)
         init_vel_hat = normalize(earth_pos[1]-earth_pos[0])
@@ -116,7 +116,7 @@ class ParallelTrackNEO(ParallelWorld):
         # -----------------------------------------------------
 
         # TODO: SKETCHY TARGET DEFINITION:
-        target_name = 'Jupiter'
+        target_name = 'Mars'
         self.target_body = [i for i in range(self.num_bodies) if self.bodies['name'][i] == target_name][0]
         # -----------------------------------------------------
 
@@ -136,37 +136,58 @@ class ParallelTrackNEO(ParallelWorld):
         self.reset()
 
 
-    def reset(self):
+    def reset(self, new_t0=None):
+        self.time = {}
+
+        if new_t0 is not None:
+            timeObj = spice.Time(*new_t0, 360) # jan 01, 2000, 360 days
+            self.bodies['positions'] = \
+                    np.array([spice.requestData(spkid, timeObj, self.dt_hours)[0].T 
+                              for spkid in self.bodies['spkid']])
+    
+            self.bodies['positions'] = np.transpose(self.bodies['positions'], 
+                                                    axes=(1,0,2))
+    
+            # TODO: SKETCHY DEFAULT INITIAL CONDITIONS FROM TEST.PY
+            earth_pos = spice.requestData('3', timeObj, self.dt_hours)[0].T
+            self.init_pos = earth_pos[0]
+            normalize = lambda a: a / np.linalg.norm(a)
+            init_vel_hat = normalize(earth_pos[1]-earth_pos[0])
+            self.init_vel = init_vel_hat * 30
+        
         self.t = 0 # Index of time. Actual time = self.dt * self.t
 
         self._update_body_pos(self.t)
+
+        self.mean_target_r = np.mean(np.linalg.norm(
+            self.bodies['positions'][:,self.target_body], axis=1))
 
         self.P = np.tile(self.init_pos, (self.num_sails, 1)) # (num_sails, 3)
         self.V = np.tile(self.init_vel, (self.num_sails, 1)) # (num_sails, 3)
 
         self.Pt = np.tile(self.body_pos[self.target_body], 
                           (self.num_sails, 1)) # target pos
-        self.Vt = np.tile((self.bodies[self.t+1:self.t+2][self.target_body] 
-                           - self.bodies[self.t:self.t+1][self.target_body]) 
+        self.Vt = np.tile((self.bodies['positions'][self.t+1][self.target_body] 
+                           - self.bodies['positions'][self.t][self.target_body]) 
                           / self.dt, (self.num_sails, 1)) # target velocity
-
+        
         return self._get_state()
 
     def max_sim_length(self):
         return len(self.bodies['positions']) - 1
 
     def _get_state(self):
-        return np.hstack((self.P, self.V, self.Pt, self.Vt))
+        return np.hstack((self.P, self.V, self.Pt, self.Vt)) / ParallelTrackNEO.AU
 
     def _update_body_pos(self, t):
         assert t < self.max_sim_length(), \
                'simulation time exceeds loaded dataset'
-        self.body_pos = self.bodies['positions'][t:t+1]
+        self.body_pos = self.bodies['positions'][t]
 
         self.Pt = np.tile(self.body_pos[self.target_body], 
                           (self.num_sails, 1)) # target pos
-        self.Vt = np.tile((self.bodies[self.t+1:self.t+2][self.target_body] 
-                           - self.bodies[self.t:self.t+1][self.target_body]) 
+        self.Vt = np.tile((self.bodies['positions'][self.t+1][self.target_body] 
+                           - self.bodies['positions'][self.t][self.target_body]) 
                           / self.dt, (self.num_sails, 1)) # target velocity
 
 
@@ -220,7 +241,21 @@ class ParallelTrackNEO(ParallelWorld):
             self.t += 1
 
         # Reward
-        rewards = 1/r2[:,self.target_body:self.target_body+1] # TODO: reward funct
+        r_scalar = np.sum(r, axis=2)
+        reward_tdist = np.exp(-10/ParallelTrackNEO.AU * \
+            r_scalar[:,self.target_body:self.target_body+1])
+
+        orbit_dist = r_scalar[:,0:1] - self.mean_target_r
+
+        if self.orbit_dist_prev is not None:
+            reward_orbit_error = orbit_dist - self.orbit_dist_prev
+        else:
+            reward_orbit_error = 0
+        reward_orbit_error = np.clip(reward_orbit_error, -1, 1)
+
+        self.orbit_dist_prev = orbit_dist
+
+        rewards = reward_tdist - reward_orbit_error
 
         return rewards, self._get_state()
 
