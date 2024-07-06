@@ -222,14 +222,29 @@ def generatePartitions(numObj, numCategories, head=np.array([0])):
                 superArray = np.append(superArray,newArray, axis=0)
         return superArray
 
+def testingSpecificSails(Earth, trajectory, timeInt, target):
+    initPos = Earth.locations.T[0]
+    initVelVec = (Earth.locations.T[1]-Earth.locations.T[0])/np.linalg.norm(Earth.locations.T[1]-Earth.locations.T[0]) #velocity vector via linearization between point 0 and 1
+    initVel = initVelVec * 30
+    print(len(Earth.timeSpan))
+    sail = utils.sailGenerator('test sail', initPos, initVel, trajectory, timeInt, len(Earth.timeSpan), [target])
+    return sail, target
+
 
 if __name__ == '__main__':
-    #dates = np.array([[5,17,2001,360], [5,20,2001,360]])
-    #sailOrientations = [-0.6,0,0.6]
-    #numSailChanges = 12
-    #pretrain.multiSailSetGenerator(dates,sailOrientations,numSailChanges)
-    print(generatePartitions(3, 3))
-    print(np.searchsorted([1,3,3,5,9], 3, side='right'))
+    
+    testTime = spice.Time(5, 15, 2001, 270)
+    sys = system.SolarSystem("270 day sys", testTime)
+    sysbds = sys.bodies
+    testTime.lengthSeconds = sysbds[0].timeSpan[-1]
+    print(sysbds[4].timeSpan[-1])
+    print(testTime.lengthSeconds)
+    print(sysbds[4].name)
+    sailset, target = pretrain.largeScaleSimpleTrajSailGen(testTime, np.array([0.6,-0.6,0]), 10000, sysbds[4], isParallel=True)
+    pretrain.generateBodyCSV(sailset, target, numsails=5, simStartDate='05152001Par270Fine10000folds2SailConfigs')
+    
+    #sail, target = testingSpecificSails(sysbds[3], np.array([[ 0,  4730400.00000071,  5991840.0000009,  sysbds[4].timeSpan[-1]], [0.6,0,-0.6,0], [0,0,0,0]]), [ 0, sysbds[4].timeSpan[-1]], target=sysbds[4])
+    #pretrain.generateBodyCSV([sail], target, numsails=1, simStartDate='05152001Par270specificCase')
 
    
 

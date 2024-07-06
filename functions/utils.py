@@ -190,6 +190,7 @@ def mpCone_Angle_Factory(t_thresholds, yaws, t):
 # TODO: ngl I think the term trajectory could be a bit confusing since we are 
 # controlling the trajectory of the inputs not the actual path of the spacecraft
 # bodies -> the planetary bodies/neos being considered in the calculations
+# trajectory -> time ints, yaw, pitch
 def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bodies=[]):
     
     #generate the transformation matrix needed
@@ -198,7 +199,7 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
     eb = np.cross(er, ev)
     initMatrix = [er, ev, eb]
     
-    coneAngle = cone_angle_factory(trajectory[0], trajectory[1], trajectory[2])
+    #coneAngle = cone_angle_factory(trajectory[0], trajectory[1], trajectory[2]) REMOVED does not play well with parallel computing
     #newSail = body.SolarSail(name, initLoc, initVel, 0, 0, coneAngle, path_style='trail', show_traj=False, initMatrix=initMatrix)
     newSail = body.SolarSail(name, initLoc, initVel, 0, trajectory[1], trajectory[0], pitchAngle=trajectory[2], path_style='trail', show_traj=False, initMatrix=initMatrix)
 
@@ -216,7 +217,7 @@ def sailGenerator(name, initLoc, initVel, trajectory, timeInterval, numsteps, bo
     #newSail.locations = newSailLocs.y[:3, :] <- solve ivp
     
     for n in range(len(newSail.timeSpan)): #finds what angle corresponds to what timestep in the integration
-        newSail.yawAngle[n] = coneAngle(newSail.timeSpan[n],[0])[0]
+        newSail.yawAngle[n] = mpCone_Angle_Factory(newSail.timeInt, newSail.yaws, newSail.timeSpan[n])
     return newSail
 
 def parallelSailGenerator(args):

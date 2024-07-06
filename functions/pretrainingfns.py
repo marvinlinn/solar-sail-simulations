@@ -39,41 +39,14 @@ def generateBodyCSV(unProcessedSailSet, targetbd, filename="sails_traj_data", nu
         with open(fileAddress, 'w', newline='') as file:
             writer = csv.writer(file, delimiter='|')
         
-            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance), "sail x", "sail y", "sail z", "time", "yaw", "sail Vx", "sail Vy", "sail Vz", "distance x", "distance y", "distance z", "abs distance"])
+            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance) + "; sail yaw orientations: " + str(sail.yaws) + "; sail time intervals" + str(sail.timeInt)])
+            writer.writerow(["time step", "sail x", "sail y", "sail z", "time", "yaw", "sail Vx", "sail Vy", "sail Vz", "distance x", "distance y", "distance z", "abs distance"])
             numsteps = len(sail.timeSpan)
             for n in range(numsteps):
                 sailPos = sail.locations[:3, n]
                 sailVel = sail.velocity[:3, n]
                 distFromTarget = sail.distanceMatrix[:, n]
                 writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], sailVel[0], sailVel[1], sailVel[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
-    '''
-    f = "pretrain_data/"+ filename + ".csv"
-    with open(f, 'w', newline='') as file:
-        writer = csv.writer(file, delimiter='|')
-        
-        #solve for things such as distance vectors and abs distance, sort based on shortest distance 
-        processedSailSet = calculateExtraData(unProcessedSailSet, targetbd)
-
-        #restricts the number of sails being written to the file
-        if numsails > 0:
-            processedSailSet = processedSailSet[:numsails]
-
-        #write target location information.
-        writer.writerow(["target: " + targetbd.name, "target x", "target y", "target z", "time"])
-        for n in range(len(targetbd.timeSpan)):
-            targetPos = targetbd.locations[:3, n]
-            writer.writerow([str(n), targetPos[0], targetPos[1], targetPos[2], targetbd.timeSpan[n]])
-
-        #write sail location information.
-        for sail in processedSailSet:
-            writer.writerow([sail.name + " " + targetbd.name + "; shortest distance: " + str(sail.closestAbsDistance), "sail x", "sail y", "sail z", "time", "yaw", "sail Vx", "sail Vy", "sail Vz", "distance x", "distance y", "distance z", "abs distance"])
-            numsteps = len(sail.timeSpan)
-            for n in range(numsteps):
-                sailPos = sail.locations[:3, n]
-                sailVel = sail.velocity[:3, n]
-                distFromTarget = sail.distanceMatrix[:, n]
-                writer.writerow([str(n), sailPos[0], sailPos[1], sailPos[2], sail.timeSpan[n], sail.yawAngle[n], sailVel[0], sailVel[1], sailVel[2], distFromTarget[0], distFromTarget[1], distFromTarget[2], distFromTarget[3]])
-    '''
     return
 
 def calculateExtraData(sailSet, targetbd):
@@ -108,9 +81,13 @@ def largeScalePermutationSailGenerator(simTime, sailorientations, numsailchanges
     #trajectories generation
     pitches = np.zeros(numsailchanges+1)
     yaws = permutationGenerator(sailorientations, numsailchanges+1)
-    timeInt = np.zeros(numsailchanges+1)
+    timeInts = np.zeros(numsailchanges+1)
     for n in range(numsailchanges+1):
-        timeInt[n] = n * (timeSeconds/numsailchanges)
+        timeInts[n] = n * (timeSeconds/numsailchanges)
+
+    #ensure shape makes sense
+    timeInts = np.repeat(timeInts, len(yaws))
+    pitches = np.repeat(pitches, len(yaws))
     
     Earth = sysbds[3]
 
@@ -126,10 +103,10 @@ def largeScalePermutationSailGenerator(simTime, sailorientations, numsailchanges
     if isParallel == False:
         for n in range(len(yaws)):
             newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
-                                      np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSteps, bodies=[sysbds[4]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
+                                      np.array([timeInts[n], yaws[n], pitches[n]]), [0, timeSeconds], numSteps, bodies=[sysbds[4]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
             sailset = np.append(sailset, newSail)
     else:
-        sailset = parallelSailGeneration(initPos, initVel, timeInt, yaws, pitches, timeSeconds, numSteps, targetbd=targetbd)
+        sailset = parallelSailGeneration(initPos, initVel, timeInts, yaws, pitches, timeSeconds, numSteps, targetbd=targetbd)
 
     #simset = np.append(sailset, sysbds)
     
@@ -147,10 +124,10 @@ def largeScaleSimpleTrajSailGen(simTime, orientationOrder, numsailChanges, targe
 
 
     #trajectories generation
-    pitches = np.zeros(len(orientationOrder))
-    yaw = orientationOrder # typically set to [0.6, 0, -0.6, 0]
-    timeInts = generatePartitions(numsailChanges, len(yaw-1)) * (timeSeconds/numsailChanges)
-    
+    timeInts = generatePartitions(numsailChanges, len(orientationOrder)-1) * (timeSeconds/numsailChanges)
+    pitches = np.zeros((len(timeInts), len(orientationOrder)))
+    yaw = np.repeat(np.array([orientationOrder]), len(timeInts), axis=0) # typically set to [0.6, 0, -0.6, 0]
+
     Earth = sysbds[3]
 
     #sail generation
@@ -165,10 +142,15 @@ def largeScaleSimpleTrajSailGen(simTime, orientationOrder, numsailChanges, targe
     if isParallel == False:
         for n in range(len(timeInts)):
             newSail = utils.sailGenerator(("sail "+ str(n)), initPos, initVel,
-                                      np.array([timeInts[n], yaw, pitches]), [0, timeSeconds], numSteps, bodies=[sysbds[4]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
+                                      np.array([timeInts[n], 
+                                                yaw[n], 
+                                                pitches[n]]), 
+                                                [0, timeSeconds], 
+                                                numSteps, 
+                                                bodies=[sysbds[4]])#TODO: verify yaws[n] makes sense -> it does since we are varrying yaws 
             sailset = np.append(sailset, newSail)
     else:
-        sailset = parallelSailGeneration(initPos, initVel, timeInts, yaw, pitches, timeSeconds, numSteps, targetbd=targetbd) # this will currently be broken
+        sailset = parallelSailGeneration(initPos, initVel, timeInts, yaw, pitches, timeSeconds, numSteps, targetbd=targetbd) 
 
     #simset = np.append(sailset, sysbds)
     
@@ -200,7 +182,6 @@ def generatePartitions(numObj, numCategories, head=np.array([0])):
         if len(head) != 0:
             num = numObj + head[-1]
         retArray = np.array([np.append(head, np.array([num]))])
-        print(retArray)
         return retArray
     else:
         for n in range(numObj+1):
@@ -276,7 +257,7 @@ def parallelsiming(dates, sailOrientations, numSailChanges, numsails, length, ta
 def parallelSailGeneration(initPos, initVel, timeInt, yaws, pitches, timeSeconds, numSymSteps, targetbd=[]):
     
     argSet = [[("sail "+ str(n)), initPos, initVel,
-                    np.array([timeInt, yaws[n], pitches]), [0, timeSeconds], numSymSteps, [targetbd]] for n in range(len(yaws))]
+                    np.array([timeInt[n], yaws[n], pitches[n]]), [0, timeSeconds], numSymSteps, [targetbd]] for n in range(len(yaws))]
 
     with Pool(os.cpu_count()) as pool:         
         sails = [pool.apply_async(utils.parallelSailGenerator, [args]) for args in argSet]
