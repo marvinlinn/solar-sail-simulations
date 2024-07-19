@@ -43,8 +43,8 @@ class CelestialBody(Body):
 
         self.mass = mass
         self.timeStep = timeStep #TODO: Currently 5 hours, maybe want to make it not hard coded
-        position, velocity = spice.requestData(spkid, timeObj, self.timeStep)
-        self.timeSpan = np.linspace(0, timeObj.lengthSeconds, len(position[0]))#set timespan when planet is created
+        position, velocity, self.timeSpan = spice.requestData(spkid, timeObj, self.timeStep)
+        #self.timeSpan = np.linspace(0, timeObj.lengthSeconds, len(position[0])) # set timespan when planet is created
         self.display_size = max(
             math.log(self.mass, self.display_log_base)/2,
             self.min_display_size,

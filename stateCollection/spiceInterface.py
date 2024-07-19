@@ -91,14 +91,16 @@ def computeBody(spkid, start_time = 'Jun 20, 2000', end_time = 'Dec 1, 2030', po
     etOne = spice.str2et(utc[0])
     etTwo = spice.str2et(utc[1])
 
-    times = [x*(etTwo-etOne)/points + etOne for x in range(points)]
+    #times = [x*(etTwo-etOne)/points + etOne for x in range(points)] OLD IMPLEMENTATIOn
+    times = np.linspace(etOne, etTwo, points) # used for retrieving spice info
+    zeroBasedTimes = times - etOne # used for making sim calculations
 
     position, velocity = spice.spkpos(spkid, times, 'J2000', 'NONE', center)
 
     # Positions is shaped (points, 3)--Transposed to (3, points) for easier indexing
     position = position.T
 
-    return position, velocity
+    return position, velocity, zeroBasedTimes
 
 # Interval Enum for handling step size calculations
 class Intervals(Enum):
