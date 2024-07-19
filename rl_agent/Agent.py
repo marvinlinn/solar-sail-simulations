@@ -20,8 +20,8 @@ class Agent():
         self.learning_rate_Q = learning_rate_Q
         self.decay_rate = decay_rate
         
-        self.p_optimizer = tf.keras.optimizers.Adam()
-        self.q_optimizer = tf.keras.optimizers.Adam()
+        self.p_optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate_policy)
+        self.q_optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate_Q)
 
     def train(self, max_duration, episodes_per_epoch, epochs):
         pass
@@ -173,10 +173,10 @@ class ParallelAgent(Agent):
 
             # update policy parameters theta += alpha * Q(s,a) * grad log pi(a|s)
             with policy_tape:
-                policy_grad_target = self.learning_rate_policy * Q_SA * log_prob
+                policy_grad_target = -Q_SA * log_prob
             policy_grads = policy_tape.gradient(policy_grad_target, 
                                                 self.policy.trainable_variables)
-            print(f'pi nan printing... {sigma}') if any([np.isnan(a).any() for a in policy_grads]) else None
+
             if not any([tf.math.reduce_any(tf.math.is_nan(a)) for a in policy_grads]):
                 self.p_optimizer.apply_gradients(zip(policy_grads, 
                                                      self.policy.trainable_variables))
@@ -187,9 +187,8 @@ class ParallelAgent(Agent):
                 Q_SA_next = self.Q(SA_next)
             td_error = R + self.decay_rate * Q_SA_next - Q_SA
             with Q_tape:
-                Q_grad_target = self.learning_rate_Q * td_error.numpy() * Q_SA # TODO: confirm td error not differentiated
+                Q_grad_target = -td_error.numpy() * Q_SA # TODO: confirm td error not differentiated
             Q_grads = Q_tape.gradient(Q_SA, self.Q.trainable_variables)
-            [print(f'Q nan printing...') if np.isnan(a).any() else None for a in Q_grads]
 
             # update weights of Q: w += alpha * delta * grad Q(s,a)
             if not any([tf.math.reduce_any(tf.math.is_nan(a)) for a in Q_grads]):
@@ -284,8 +283,7 @@ class ParallelAgent(Agent):
                     mu, sigma = self.policy(s[:-1])
                     normal = tfp.distributions.Normal(mu, sigma)
                     log_prob = normal.log_prob(a[:-1])
-                    policy_grad_target = \
-                            self.learning_rate_policy * Qsa[:-1] * log_prob
+                    policy_grad_target = -Qsa[:-1] * log_prob
 
                 # update policy params
                 policy_grads = policy_tape.gradient(policy_grad_target, 
@@ -296,7 +294,7 @@ class ParallelAgent(Agent):
 
                 # update Q function
                 with Q_tape:
-                    Q_grad_target = self.learning_rate_Q * td_error * Qsa[:-1]
+                    Q_grad_target = -td_error * Qsa[:-1]
                 Q_grads = Q_tape.gradient(Q_grad_target, self.Q.trainable_variables)
                 self.q_optimizer.apply_gradients(zip(Q_grads, self.Q.trainable_variables))
         

@@ -69,6 +69,8 @@ class ParallelTrackNEO(ParallelWorld):
     def __init__(self, num_sails=50, dt=5, control_interval=5):
         self.time = {'get pos': 0, 'square dists': 0, 'grav accel': 0, 'sail accel': 0, 'update': 0}
 
+        self.orbit_dist_prev = None
+
         self.num_sails = num_sails
         self.dt_hours = dt
         self.dt = self.dt_hours * 3600
@@ -137,7 +139,7 @@ class ParallelTrackNEO(ParallelWorld):
 
 
     def reset(self, new_t0=None):
-        self.time = {}
+        self.time = {'get pos': 0, 'square dists': 0, 'grav accel': 0, 'sail accel': 0, 'update': 0}
 
         if new_t0 is not None:
             timeObj = spice.Time(*new_t0, 360) # jan 01, 2000, 360 days
@@ -241,17 +243,19 @@ class ParallelTrackNEO(ParallelWorld):
             self.t += 1
 
         # Reward
-        r_scalar = np.sum(r, axis=2)
+        r_scalar = np.sqrt(r2)
         reward_tdist = np.exp(-10/ParallelTrackNEO.AU * \
             r_scalar[:,self.target_body:self.target_body+1])
 
-        orbit_dist = r_scalar[:,0:1] - self.mean_target_r
+        orbit_dist = (r_scalar[:,0:1] - self.mean_target_r) / ParallelTrackNEO.AU
 
         if self.orbit_dist_prev is not None:
             reward_orbit_error = orbit_dist - self.orbit_dist_prev
         else:
-            reward_orbit_error = 0
-        reward_orbit_error = np.clip(reward_orbit_error, -1, 1)
+            reward_orbit_error = np.zeros(orbit_dist.shape)
+        reward_orbit_error[reward_orbit_error > 0] *= 10
+        reward_orbit_error[reward_orbit_error < 0] *= 5
+        reward_orbit_error = np.tanh(reward_orbit_error)
 
         self.orbit_dist_prev = orbit_dist
 
