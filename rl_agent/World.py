@@ -66,7 +66,7 @@ class ParallelTrackNEO(ParallelWorld):
     #   Uranus:  mu = 5.7939399e15      / 1e9,
     #   Neptune: mu = 6.8365299e15      / 1e9 ]
 
-    def __init__(self, num_sails=50, dt=5, control_interval=5):
+    def __init__(self, num_sails=50, dt=5, control_interval=5, days=360):
         self.time = {'get pos': 0, 'square dists': 0, 'grav accel': 0, 'sail accel': 0, 'update': 0}
 
         self.orbit_dist_prev = None
@@ -75,6 +75,7 @@ class ParallelTrackNEO(ParallelWorld):
         self.dt_hours = dt
         self.dt = self.dt_hours * 3600
         self.control_interval=control_interval
+        self.days = 360
 
         self.bodies = {}
         self.bodies['name'] = np.array(['Sun', 'Mercury', 'Venus', 'Earth', 
@@ -101,7 +102,7 @@ class ParallelTrackNEO(ParallelWorld):
 
 
         self.num_bodies = len(self.bodies['name'])
-        timeObj = spice.Time(1, 1, 2000, 360) # jan 01, 2000, 360 days
+        timeObj = spice.Time(1, 1, 2000, days) # jan 01, 2000, 360 days
         self.bodies['positions'] = \
                 np.array([spice.requestData(spkid, timeObj, self.dt_hours)[0].T 
                           for spkid in self.bodies['spkid']])
@@ -142,7 +143,7 @@ class ParallelTrackNEO(ParallelWorld):
         self.time = {'get pos': 0, 'square dists': 0, 'grav accel': 0, 'sail accel': 0, 'update': 0}
 
         if new_t0 is not None:
-            timeObj = spice.Time(*new_t0, 360) # jan 01, 2000, 360 days
+            timeObj = spice.Time(*new_t0, self.days) # jan 01, 2000, 360 days
             self.bodies['positions'] = \
                     np.array([spice.requestData(spkid, timeObj, self.dt_hours)[0].T 
                               for spkid in self.bodies['spkid']])
