@@ -38,14 +38,16 @@ listener.start()
 
 def update(frame):
     global last_key
-    A = [-0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 
-         0.1, 0.2, 0.3, 0.4, 0.5, 0.6][last_key]
+    if last_key == 0:
+        last_key = 5
+    A = [-0.6, -0.5, -0.3, -0.1, 0.0, 
+         0.1, 0.3, 0.5, 0.6][last_key-1]
     print(A)
     A = np.array([[A]])
     R, S = world.advance_simulation(A)
     x, y, z = zip(S[0,:3], S[0,6:9])
     scatter._offsets3d = (x[1:], y[1:], z[1:])
-    scatter_sail._offsets3d = (x[:1], y[:1], z[:1])
+    scatter_sail._offsets3d = (x[:1] + (0, ), y[:1] + (0, ), z[:1] + (0, ))
 
 ani = FuncAnimation(fig, update, interval=100)
 
